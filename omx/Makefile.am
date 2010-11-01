@@ -48,9 +48,18 @@ libgstomx_la_CFLAGS = -I$(srcdir)/headers $(GST_CFLAGS) $(GST_BASE_CFLAGS) -I$(t
 libgstomx_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) $(top_builddir)/util/libutil.la
 libgstomx_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 
-EXTRA_DIST = headers gstomx.conf
+EXTRA_DIST = headers gstomx.conf gstomx_conf.c
 
+# Run the C-preprocessor plus some sed voodoo to clean up adjacent strings
+# (ie. "foo" "bar" becomes "foobar") so they are handled similar to what the
+# C compiler does itself
+gstomx.conf: gstomx.conf.in
+	cat $^ | $(CPP) $(CFLAGS) $(libgstomx_la_CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) - | grep -v "^#" | sed 's/\"\ *\"//g' >> $@
+
+# more sed magic to convert the pre-processed config file into a C file
+# containing one big string.  This is linked in and used as the default
+# config
 gstomx_conf.c: gstomx.conf
 	echo "const char *default_config =" > $@
-	cat $^ | $(CPP) $(CFLAGS) $(libgstomx_la_CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) - | grep -v "^#" | sed 's/^.*/\"&\\\n"/' >> $@
+	cat $^ | sed 's/\"/\\\"/g' | sed 's/^.*/\"&\\\n"/' >> $@
 	echo ";" >> $@
