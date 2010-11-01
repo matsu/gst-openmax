@@ -24,8 +24,11 @@
 
 #include <gst/gst.h>
 
-G_BEGIN_DECLS GST_DEBUG_CATEGORY_EXTERN (gstomx_debug);
+G_BEGIN_DECLS
+
+GST_DEBUG_CATEGORY_EXTERN (gstomx_debug);
 GST_DEBUG_CATEGORY_EXTERN (gstomx_util_debug);
+
 #define GST_CAT_DEFAULT gstomx_debug
 
 enum
@@ -44,4 +47,5 @@ void gstomx_install_property_helper (GObjectClass * gobject_class);
 gboolean gstomx_get_property_helper (void *core, guint prop_id, GValue * value);
 
 G_END_DECLS
+
 #endif /* GSTOMX_H */
