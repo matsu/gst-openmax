@@ -26,37 +26,6 @@
 GSTOMX_BOILERPLATE (GstOmxMp2Dec, gst_omx_mp2dec, GstOmxBaseAudioDec,
     GST_OMX_BASE_AUDIODEC_TYPE);
 
-static GstCaps *
-generate_src_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_simple ("audio/x-raw-int",
-      "endianness", G_TYPE_INT, G_BYTE_ORDER,
-      "width", G_TYPE_INT, 16,
-      "depth", G_TYPE_INT, 16,
-      "rate", GST_TYPE_INT_RANGE, 8000, 96000,
-      "signed", G_TYPE_BOOLEAN, TRUE,
-      "channels", GST_TYPE_INT_RANGE, 1, 2, NULL);
-
-  return caps;
-}
-
-static GstCaps *
-generate_sink_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_simple ("audio/mpeg",
-      "mpegversion", G_TYPE_INT, 1,
-      "layer", G_TYPE_INT, 2,
-      "rate", GST_TYPE_INT_RANGE, 8000, 96000,
-      "channels", GST_TYPE_INT_RANGE, 1, 2,
-      "parsed", G_TYPE_BOOLEAN, TRUE, NULL);
-
-  return caps;
-}
-
 static void
 type_base_init (gpointer g_class)
 {
@@ -69,23 +38,13 @@ type_base_init (gpointer g_class)
       "Codec/Decoder/Audio",
       "Decodes audio in MP2 format with OpenMAX IL", "Felipe Contreras");
 
-  {
-    GstPadTemplate *template;
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "sink")));
 
-    template = gst_pad_template_new ("src", GST_PAD_SRC,
-        GST_PAD_ALWAYS, generate_src_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
-
-  {
-    GstPadTemplate *template;
-
-    template = gst_pad_template_new ("sink", GST_PAD_SINK,
-        GST_PAD_ALWAYS, generate_sink_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "src")));
 }
 
 static void

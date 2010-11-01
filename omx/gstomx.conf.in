@@ -20,58 +20,108 @@ omx_dummy_2,
   component-name=OMX.st.dummy2,
   rank=256;
 
+/* standard width/height/framerate that applies to video decoders and encoders
+ * on both src and sink pad:
+ */
+#define VIDEO_SIZE_RATE \
+	"width=(int)[16,4096], " \
+	"height=(int)[16,4096], " \
+	"framerate=(fraction)[0,max]"
+
+/* standard raw video caps that applies to all video decoder src pads and
+ * video encoder sink pads:
+ */
+#define RAW_VIDEO_CAPS \
+	"video/x-raw-yuv, " \
+	VIDEO_SIZE_RATE ", " \
+	"format=(fourcc){I420, YUY2, UYVY, NV12}; "
+
+
+/* standard raw audio caps that applies to all audio decoder src pads and
+ * audio encoder sink pads:
+ */
+#define RAW_AUDIO_CAPS(rate,channels) \
+	"audio/x-raw-int, " \
+	"endianess=(int)1234, " \
+	"width=(int)16, " \
+	"depth=(int)16, " \
+	"rate=(int)" rate ", " \
+	"signed=(boolean)true, " \
+	"channels=(int)" channels ";"
+
 omx_mpeg4dec,
   type=GstOmxMpeg4Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_decoder.mpeg4,
+  sink="video/mpeg, mpegversion=(int)4, systemstream=false, " VIDEO_SIZE_RATE ";" \
+      "video/x-divx, divxversion=(int)[4,5], " VIDEO_SIZE_RATE ";" \
+      "video/x-xvid, " VIDEO_SIZE_RATE ";" \
+      "video/x-3ivx, " VIDEO_SIZE_RATE ";",
+  src=RAW_VIDEO_CAPS,
   rank=256;
 
 omx_h264dec,
   type=GstOmxH264Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_decoder.avc,
+  sink="video/x-h264, " VIDEO_SIZE_RATE ";",
+  src=RAW_VIDEO_CAPS,
   rank=256;
 
 omx_h263dec,
   type=GstOmxH263Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_decoder.h263,
+  sink="video/x-h263, variant=(string)itu, " VIDEO_SIZE_RATE ";",
+  src=RAW_VIDEO_CAPS,
   rank=256;
 
 omx_wmvdec,
   type=GstOmxWmvDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_decoder.wmv,
+  sink="video/x-wmv, " VIDEO_SIZE_RATE ";",
+  src=RAW_VIDEO_CAPS,
   rank=256;
 
 omx_mpeg4enc,
   type=GstOmxMpeg4Enc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_encoder.mpeg4,
+  sink=RAW_VIDEO_CAPS,
+  src="video/mpeg, mpegversion=(int)4, systemstream=false, " VIDEO_SIZE_RATE ";",
   rank=256;
 
 omx_h264enc,
   type=GstOmxH264Enc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_encoder.avc,
+  sink=RAW_VIDEO_CAPS,
+  src="video/x-h264, " VIDEO_SIZE_RATE ";",
   rank=256;
 
 omx_h263enc,
   type=GstOmxH263Enc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_encoder.h263,
+  sink=RAW_VIDEO_CAPS,
+  src="video/x-h263, variant=(string)itu, " VIDEO_SIZE_RATE ";",
   rank=256;
 
 omx_vorbisdec,
   type=GstOmxVorbisDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.ogg.single,
+  sink="application/ogg;",
+  src=RAW_AUDIO_CAPS("[8000, 96000]", "[1, 256]"),
   rank=128;
 
 omx_mp3dec,
   type=GstOmxMp3Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.mp3.mad,
+  sink="audio/mpeg, mpegversion=(int)1, layer=(int)3, rate=(int)[8000, 48000], channels=(int)[1, 8], parsed=true;",
+  src=RAW_AUDIO_CAPS("[8000, 96000]", "[1, 2]"),
   rank=256;
 
 #ifdef EXPERIMENTAL
@@ -80,96 +130,130 @@ omx_mp2dec,
   type=GstOmxMp2Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.mp3.mad,
+  sink="audio/mpeg, mpegversion=(int)1, layer=(int)2, rate=(int)[8000, 96000], channels=(int)[1, 2], parsed=true;",
+  src=RAW_AUDIO_CAPS("[8000, 96000]", "[1, 2]"),
   rank=256;
 
 omx_amrnbdec,
   type=GstOmxAmrNbDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.amrnb,
+  sink="audio/AMR, rate=(int)8000, channels=(int)1;",
+  src=RAW_AUDIO_CAPS("8000", "1"),
   rank=256;
 
 omx_amrnbenc,
   type=GstOmxAmrNbEnc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_encoder.amrnb,
+  sink=RAW_AUDIO_CAPS("8000", "1"),
+  src="audio/AMR, rate=(int)8000, channels=(int)1;",
   rank=256;
 
 omx_amrwbdec,
   type=GstOmxAmrWbDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.amrwb,
+  sink="audio/AMR-WB, rate=(int)16000, channels=(int)1;",
+  src=RAW_AUDIO_CAPS("16000", "1"),
   rank=256;
 
 omx_amrwbenc,
   type=GstOmxAmrWbEnc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_encoder.amrwb,
+  sink=RAW_AUDIO_CAPS("16000", "1"),
+  src="audio/AMR-WB, rate=(int)16000, channels=(int)1;",
   rank=256;
 
 omx_aacdec,
   type=GstOmxAacDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.aac,
+  sink="audio/mpeg, mpegversion=(int){2,4}, rate=(int)[8000, 96000], channels=(int)[1, 6];",
+  src=RAW_AUDIO_CAPS("[8000, 96000]", "[1, 6]"),
   rank=256;
 
 omx_aacenc,
   type=GstOmxAacEnc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_encoder.aac,
+  sink=RAW_AUDIO_CAPS("[8000, 96000]", "[1, 6]"),
+  src="audio/mpeg, mpegversion=(int){2,4}, rate=(int)[8000, 96000], channels=(int)[1, 6];",
   rank=256;
 
 omx_adpcmdec,
   type=GstOmxAdpcmDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.adpcm,
+  sink="audio/x-adpcm, layout=dvi, rate=(int)[8000, 96000], channels=(int)1;",
+  src=RAW_AUDIO_CAPS("[8000, 96000]", "1"),
   rank=256;
 
 omx_adpcmenc,
   type=GstOmxAdpcmEnc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_encoder.adpcm,
+  sink=RAW_AUDIO_CAPS("[8000, 96000]", "1"),
+  src="audio/x-adpcm, layout=dvi, rate=(int)[8000, 96000], channels=(int)1;",
   rank=256;
 
 omx_g711dec,
   type=GstOmxG711Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.g711,
+  sink="audio/x-alaw, rate=(int)8000, channels=(int)1;" \
+      "audio/x-mulaw, rate=(int)8000, channels=(int)1;",
+  src=RAW_AUDIO_CAPS("8000", "1"),
   rank=256;
 
 omx_g711enc,
   type=GstOmxG711Enc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_encoder.g711,
+  sink=RAW_AUDIO_CAPS("8000", "1"),
+  src="audio/x-alaw, rate=(int)8000, channels=(int)1;" \
+      "audio/x-mulaw, rate=(int)8000, channels=(int)1;",
   rank=256;
 
 omx_g729dec,
   type=GstOmxG729Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.g729,
+  sink="audio/G729, rate=(int)8000, channels=(int)1;",
+  src=RAW_AUDIO_CAPS("8000", "1"),
   rank=256;
 
 omx_g729enc,
   type=GstOmxG729Enc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_encoder.g729,
+  sink=RAW_AUDIO_CAPS("8000", "1"),
+  src="audio/G729, rate=(int)8000, channels=(int)1;",
   rank=256;
 
 omx_ilbcdec,
   type=GstOmxIlbcDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.ilbc,
+  sink="audio/x-iLBC, mode=(int){20, 30};",
+  src=RAW_AUDIO_CAPS("8000", "1"),
   rank=256;
 
 omx_ilbcenc,
   type=GstOmxIlbcEnc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_encoder.ilbc,
+  sink=RAW_AUDIO_CAPS("8000", "1"),
+  src="audio/x-iLBC, mode=(int){20, 30};",
   rank=256;
 
 omx_jpegenc,
   type=GstOmxJpegEnc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.image_encoder.jpeg,
+  sink=RAW_VIDEO_CAPS,
+  src="image/jpeg, " VIDEO_SIZE_RATE ";",
   rank=256;
 
 #endif /* EXPERIMENTAL */
@@ -178,6 +262,7 @@ omx_audiosink,
   type=GstOmxAudioSink,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.alsa.alsasink,
+  sink=RAW_AUDIO_CAPS("[8000, 48000]", "[1, 8]"),
   rank=0;
 
 #ifdef EXPERIMENTAL
@@ -186,12 +271,14 @@ omx_videosink,
   type=GstOmxVideoSink,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.videosink,
+  sink=RAW_VIDEO_CAPS,
   rank=0;
 
 omx_filereadersrc,
   type=GstOmxFilereaderSrc,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_filereader,
+  src="ANY",
   rank=0;
 
 #endif /* EXPERIMENTAL */
@@ -200,4 +287,6 @@ omx_volume,
   type=GstOmxVolume,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.volume.component,
+  sink=RAW_AUDIO_CAPS("[8000, 48000]", "[1, 8]"),
+  src=RAW_AUDIO_CAPS("[8000, 48000]", "[1, 8]"),
   rank=0;

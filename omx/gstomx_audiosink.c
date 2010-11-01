@@ -25,22 +25,6 @@
 GSTOMX_BOILERPLATE (GstOmxAudioSink, gst_omx_audiosink, GstOmxBaseSink,
     GST_OMX_BASE_SINK_TYPE);
 
-static GstCaps *
-generate_sink_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_simple ("audio/x-raw-int",
-      "endianness", G_TYPE_INT, G_BYTE_ORDER,
-      "width", GST_TYPE_INT_RANGE, 8, 32,
-      "depth", GST_TYPE_INT_RANGE, 8, 32,
-      "rate", GST_TYPE_INT_RANGE, 8000, 48000,
-      "signed", G_TYPE_BOOLEAN, TRUE,
-      "channels", GST_TYPE_INT_RANGE, 1, 8, NULL);
-
-  return caps;
-}
-
 static void
 type_base_init (gpointer g_class)
 {
@@ -52,14 +36,9 @@ type_base_init (gpointer g_class)
       "OpenMAX IL audiosink element",
       "Sink/Audio", "Renders audio", "Felipe Contreras");
 
-  {
-    GstPadTemplate *template;
-
-    template = gst_pad_template_new ("sink", GST_PAD_SINK,
-        GST_PAD_ALWAYS, generate_sink_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "sink")));
 }
 
 static gboolean

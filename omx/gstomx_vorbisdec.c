@@ -25,31 +25,6 @@
 GSTOMX_BOILERPLATE (GstOmxVorbisDec, gst_omx_vorbisdec, GstOmxBaseAudioDec,
     GST_OMX_BASE_AUDIODEC_TYPE);
 
-static GstCaps *
-generate_src_template (void)
-{
-  GstCaps *caps = NULL;
-
-  caps = gst_caps_new_simple ("audio/x-raw-int",
-      "rate", GST_TYPE_INT_RANGE, 8000, 96000,
-      "signed", G_TYPE_BOOLEAN, TRUE,
-      "endianness", G_TYPE_INT, G_BYTE_ORDER,
-      "width", G_TYPE_INT, 16,
-      "depth", G_TYPE_INT, 16, "channels", GST_TYPE_INT_RANGE, 1, 256, NULL);
-
-  return caps;
-}
-
-static GstCaps *
-generate_sink_template (void)
-{
-  GstCaps *caps = NULL;
-
-  caps = gst_caps_new_simple ("application/ogg", NULL);
-
-  return caps;
-}
-
 static void
 type_base_init (gpointer g_class)
 {
@@ -62,23 +37,13 @@ type_base_init (gpointer g_class)
       "Codec/Decoder/Audio",
       "Decodes audio in Vorbis format with OpenMAX IL", "Felipe Contreras");
 
-  {
-    GstPadTemplate *template;
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "sink")));
 
-    template = gst_pad_template_new ("src", GST_PAD_SRC,
-        GST_PAD_ALWAYS, generate_src_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
-
-  {
-    GstPadTemplate *template;
-
-    template = gst_pad_template_new ("sink", GST_PAD_SINK,
-        GST_PAD_ALWAYS, generate_sink_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "src")));
 }
 
 static void

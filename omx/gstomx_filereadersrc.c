@@ -32,16 +32,6 @@ enum
 GSTOMX_BOILERPLATE (GstOmxFilereaderSrc, gst_omx_filereadersrc, GstOmxBaseSrc,
     GST_OMX_BASE_SRC_TYPE);
 
-static GstCaps *
-generate_src_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_any ();
-
-  return caps;
-}
-
 static void
 type_base_init (gpointer g_class)
 {
@@ -53,14 +43,9 @@ type_base_init (gpointer g_class)
       "OpenMAX IL filereader src element",
       "None", "Does nothing", "Felipe Contreras");
 
-  {
-    GstPadTemplate *template;
-
-    template = gst_pad_template_new ("src", GST_PAD_SRC,
-        GST_PAD_ALWAYS, generate_src_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "src")));
 }
 
 static gboolean

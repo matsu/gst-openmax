@@ -25,21 +25,6 @@
 GSTOMX_BOILERPLATE (GstOmxMpeg4Enc, gst_omx_mpeg4enc, GstOmxBaseVideoEnc,
     GST_OMX_BASE_VIDEOENC_TYPE);
 
-static GstCaps *
-generate_src_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_simple ("video/mpeg",
-      "width", GST_TYPE_INT_RANGE, 16, 4096,
-      "height", GST_TYPE_INT_RANGE, 16, 4096,
-      "framerate", GST_TYPE_FRACTION_RANGE, 0, 1, G_MAXINT, 1,
-      "mpegversion", G_TYPE_INT, 4,
-      "systemstream", G_TYPE_BOOLEAN, FALSE, NULL);
-
-  return caps;
-}
-
 static void
 type_base_init (gpointer g_class)
 {
@@ -52,14 +37,13 @@ type_base_init (gpointer g_class)
       "Codec/Encoder/Video",
       "Encodes video in MPEG-4 format with OpenMAX IL", "Felipe Contreras");
 
-  {
-    GstPadTemplate *template;
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "sink")));
 
-    template = gst_pad_template_new ("src", GST_PAD_SRC,
-        GST_PAD_ALWAYS, generate_src_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "src")));
 }
 
 static void

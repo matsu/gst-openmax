@@ -34,32 +34,6 @@ enum
 GSTOMX_BOILERPLATE (GstOmxAmrWbEnc, gst_omx_amrwbenc, GstOmxBaseFilter,
     GST_OMX_BASE_FILTER_TYPE);
 
-static GstCaps *
-generate_src_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_simple ("audio/AMR-WB",
-      "channels", G_TYPE_INT, 1, "rate", G_TYPE_INT, 16000, NULL);
-
-  return caps;
-}
-
-static GstCaps *
-generate_sink_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_simple ("audio/x-raw-int",
-      "endianness", G_TYPE_INT, G_BYTE_ORDER,
-      "width", G_TYPE_INT, 16,
-      "depth", G_TYPE_INT, 16,
-      "rate", G_TYPE_INT, 16000,
-      "signed", G_TYPE_BOOLEAN, TRUE, "channels", G_TYPE_INT, 1, NULL);
-
-  return caps;
-}
-
 static void
 type_base_init (gpointer g_class)
 {
@@ -72,23 +46,13 @@ type_base_init (gpointer g_class)
       "Codec/Encoder/Audio",
       "Encodes audio in AMR-WB format with OpenMAX IL", "Felipe Contreras");
 
-  {
-    GstPadTemplate *template;
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "sink")));
 
-    template = gst_pad_template_new ("src", GST_PAD_SRC,
-        GST_PAD_ALWAYS, generate_src_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
-
-  {
-    GstPadTemplate *template;
-
-    template = gst_pad_template_new ("sink", GST_PAD_SINK,
-        GST_PAD_ALWAYS, generate_sink_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "src")));
 }
 
 static void

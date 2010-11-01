@@ -37,55 +37,6 @@ enum
 GSTOMX_BOILERPLATE (GstOmxJpegEnc, gst_omx_jpegenc, GstOmxBaseFilter,
     GST_OMX_BASE_FILTER_TYPE);
 
-static GstCaps *
-generate_src_template (void)
-{
-  GstCaps *caps;
-
-  caps = gst_caps_new_simple ("image/jpeg",
-      "width", GST_TYPE_INT_RANGE, 16, 4096,
-      "height", GST_TYPE_INT_RANGE, 16, 4096,
-      "framerate", GST_TYPE_FRACTION_RANGE, 0, 1, G_MAXINT, 1, NULL);
-
-  return caps;
-}
-
-static GstCaps *
-generate_sink_template (void)
-{
-  GstCaps *caps;
-  GstStructure *struc;
-
-  caps = gst_caps_new_empty ();
-
-  struc = gst_structure_new ("video/x-raw-yuv",
-      "width", GST_TYPE_INT_RANGE, 16, 4096,
-      "height", GST_TYPE_INT_RANGE, 16, 4096,
-      "framerate", GST_TYPE_FRACTION_RANGE, 0, 1, G_MAXINT, 1, NULL);
-
-  {
-    GValue list = { 0 };
-    GValue val = { 0 };
-
-    g_value_init (&list, GST_TYPE_LIST);
-    g_value_init (&val, GST_TYPE_FOURCC);
-
-    gst_value_set_fourcc (&val, GST_MAKE_FOURCC ('I', '4', '2', '0'));
-    gst_value_list_append_value (&list, &val);
-
-    gst_value_set_fourcc (&val, GST_MAKE_FOURCC ('U', 'Y', 'V', 'Y'));
-    gst_value_list_append_value (&list, &val);
-
-    gst_structure_set_value (struc, "format", &list);
-
-    g_value_unset (&val);
-    g_value_unset (&list);
-  }
-
-  gst_caps_append_structure (caps, struc);
-
-  return caps;
-}
 
 static void
 type_base_init (gpointer g_class)
@@ -99,23 +50,13 @@ type_base_init (gpointer g_class)
       "Codec/Encoder/Image",
       "Encodes image in JPEG format with OpenMAX IL", "Felipe Contreras");
 
-  {
-    GstPadTemplate *template;
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "sink")));
 
-    template = gst_pad_template_new ("src", GST_PAD_SRC,
-        GST_PAD_ALWAYS, generate_src_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
-
-  {
-    GstPadTemplate *template;
-
-    template = gst_pad_template_new ("sink", GST_PAD_SINK,
-        GST_PAD_ALWAYS, generate_sink_template ());
-
-    gst_element_class_add_pad_template (element_class, template);
-  }
+  gst_element_class_add_pad_template (element_class,
+      gst_pad_template_new ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
+          gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "src")));
 }
 
 static void

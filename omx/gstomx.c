@@ -327,6 +327,36 @@ gstomx_core_new (void *object, GType type)
   return core;
 }
 
+GstCaps *
+gstomx_template_caps (GType type, const gchar * pad_name)
+{
+  const gchar *element_name;
+  GstStructure *element;
+  const gchar *caps_str;
+
+  element_name = g_type_get_qdata (type, element_name_quark);
+  element = get_element_entry (element_name);
+
+
+  /* this shouldn't really happen.. */
+  if (!element)
+    return GST_CAPS_ANY;
+
+  caps_str = gst_structure_get_string (element, pad_name);
+
+  GST_DEBUG ("%s: %s", element_name, caps_str);
+
+  /* default to ANY.. at least for now.. maybe when everything is converted
+   * over, we should treat missing caps as a more serious condition?
+   */
+  if (!caps_str) {
+    g_warning ("%s is missing required field: %s", element_name, pad_name);
+    return GST_CAPS_ANY;
+  }
+
+  return gst_caps_from_string (caps_str);
+}
+
 void
 gstomx_install_property_helper (GObjectClass * gobject_class)
 {

@@ -43,6 +43,7 @@ enum
 gboolean gstomx_get_component_info (void *core, GType type);
 
 void *gstomx_core_new (void *object, GType type);
+GstCaps *gstomx_template_caps (GType type, const gchar * pad_name);
 void gstomx_install_property_helper (GObjectClass * gobject_class);
 gboolean gstomx_get_property_helper (void *core, guint prop_id, GValue * value);
 
