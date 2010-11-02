@@ -4,6 +4,9 @@
 .libs
 Makefile.in
 
+ABOUT-NLS
+po
+
 INSTALL
 Makefile
 aclocal.m4

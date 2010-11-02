@@ -14,6 +14,14 @@ GST_REQUIRED=0.10.0
 dnl AM_MAINTAINER_MODE provides the option to enable maintainer mode
 AM_MAINTAINER_MODE
 
+dnl sets host_* variables
+AC_CANONICAL_HOST
+
+dnl use pretty build output with automake >= 1.11
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])],
+  [AM_DEFAULT_VERBOSITY=1
+   AC_SUBST(AM_DEFAULT_VERBOSITY)])
+
 dnl check for tools
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -30,6 +38,12 @@ AG_GST_INIT
 
 dnl define an ERROR_CFLAGS Makefile variable
 AG_GST_SET_ERROR_CFLAGS($GST_CVS)
+
+dnl set up gettext
+dnl the version check needs to stay here because autopoint greps for it
+AM_GNU_GETTEXT_VERSION([0.17])
+AM_GNU_GETTEXT([external])
+AG_GST_GETTEXT([gst-openmax-$GST_MAJORMINOR])
 
 dnl add GStreamer arguments
 AG_GST_ARG_DEBUG
@@ -100,9 +114,6 @@ dnl this really should only contain flags, not libs - they get added before
 dnl whatevertarget_LIBS and -L flags here affect the rest of the linking
 GST_PLUGIN_LDFLAGS="-module -avoid-version -export-symbols-regex '^[_]*gst_plugin_desc\$\$' $GST_ALL_LDFLAGS"
 AC_SUBST(GST_PLUGIN_LDFLAGS)
-
-SHAVE_INIT
-AC_CONFIG_FILES([shave shave-libtool])
 
 AC_CONFIG_FILES([Makefile \
 		 omx/Makefile \
