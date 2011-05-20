@@ -56,6 +56,12 @@ sink_setcaps (GstPad * pad, GstCaps * caps)
 {
   GstStructure *structure;
   GstOmxBaseFilter *omx_base;
+  OMX_AUDIO_PARAM_AACPROFILETYPE param;
+  gint channels = 0;
+  gint sample_rate = 0;
+  gint mpegversion = 0;
+  const gchar *stream_format;
+  G_OMX_INIT_PARAM (param);
 
   omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
 
@@ -74,6 +80,33 @@ sink_setcaps (GstPad * pad, GstCaps * caps)
       gst_buffer_ref (buffer);
     }
   }
+
+  gst_structure_get_int(structure, "mpegversion", &mpegversion);
+  gst_structure_get_int(structure, "channels", &channels);
+  gst_structure_get_int(structure, "rate", &sample_rate);
+  stream_format = gst_structure_get_string(structure, "stream-format");
+
+  /* retrieve current in port params */
+  param.nPortIndex = omx_base->in_port->port_index;
+  OMX_GetParameter (omx_base->gomx->omx_handle, OMX_IndexParamAudioAac, &param);
+
+  if(channels > 0)
+    param.nChannels = (OMX_U32)channels;
+  if(sample_rate > 0)
+    param.nSampleRate = (OMX_U32)sample_rate;
+  if(!g_strcmp0(stream_format, "adif")) {
+    param.eAACStreamFormat = OMX_AUDIO_AACStreamFormatADIF;
+  }
+  else if(!g_strcmp0(stream_format, "raw")) {
+    param.eAACStreamFormat = OMX_AUDIO_AACStreamFormatRAW;
+  }
+  else if(!g_strcmp0(stream_format, "adts")) {
+    if(mpegversion == 2)
+      param.eAACStreamFormat = OMX_AUDIO_AACStreamFormatMP2ADTS;
+    else if(mpegversion == 4)
+      param.eAACStreamFormat = OMX_AUDIO_AACStreamFormatMP4ADTS;
+  }
+  OMX_SetParameter(omx_base->gomx->omx_handle, OMX_IndexParamAudioAac, &param);
 
   return gst_pad_set_caps (pad, caps);
 }

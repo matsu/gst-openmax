@@ -170,7 +170,7 @@ omx_aacdec,
   type=GstOmxAacDec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.audio_decoder.aac,
-  sink="audio/mpeg, mpegversion=(int){2,4}, rate=(int)[8000, 96000], channels=(int)[1, 6], framed=true;",
+  sink="audio/mpeg, mpegversion=(int){2,4}, rate=(int)[8000, 96000], channels=(int)[1, 6], stream-type={raw,adts,adif}, framed=true;",
   src=RAW_AUDIO_CAPS("[8000, 96000]", "[1, 6]"),
   rank=256;
 
