@@ -64,7 +64,7 @@ omx_h264dec,
   type=GstOmxH264Dec,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.video_decoder.avc,
-  sink="video/x-h264, " VIDEO_SIZE_RATE ";",
+  sink="video/x-h264, stream-format=(string)avc, alignment=(string)nal, " VIDEO_SIZE_RATE ";",
   src=RAW_VIDEO_CAPS,
   rank=256;
 
