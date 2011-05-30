@@ -65,6 +65,10 @@ settings_changed_cb (GOmxCore * core)
       case OMX_COLOR_FormatYUV420PackedPlanar:
         format = GST_MAKE_FOURCC ('I', '4', '2', '0');
         break;
+      case OMX_COLOR_FormatYUV420SemiPlanar:
+      case OMX_COLOR_FormatYUV420PackedSemiPlanar:
+        format = GST_MAKE_FOURCC ('N', 'V', '1', '2');
+        break;
       case OMX_COLOR_FormatYCbYCr:
         format = GST_MAKE_FOURCC ('Y', 'U', 'Y', '2');
         break;
