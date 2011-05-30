@@ -61,6 +61,7 @@ settings_changed_cb (GOmxCore * core)
     width = param.format.video.nFrameWidth;
     height = param.format.video.nFrameHeight;
     switch (param.format.video.eColorFormat) {
+      case OMX_COLOR_FormatYUV420Planar:
       case OMX_COLOR_FormatYUV420PackedPlanar:
         format = GST_MAKE_FOURCC ('I', '4', '2', '0');
         break;
