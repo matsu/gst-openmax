@@ -238,7 +238,7 @@ plugin_init (GstPlugin * plugin)
     const gchar *element_name = gst_structure_nth_field_name (element_table, i);
     GstStructure *element = get_element_entry (element_name);
     const gchar *type_name, *parent_type_name;
-    const gchar *component_name, *component_role, *library_name;
+    const gchar *component_name, *library_name;
     GType type;
     gint rank;
 
@@ -248,7 +248,6 @@ plugin_init (GstPlugin * plugin)
     parent_type_name = gst_structure_get_string (element, "parent-type");
     type_name = gst_structure_get_string (element, "type");
     component_name = gst_structure_get_string (element, "component-name");
-    component_role = gst_structure_get_string (element, "component-role");
     library_name = gst_structure_get_string (element, "library-name");
 
     if (!type_name || !component_name || !library_name) {
