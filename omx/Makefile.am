@@ -54,7 +54,7 @@ EXTRA_DIST = headers gstomx.conf gstomx_conf.c
 # (ie. "foo" "bar" becomes "foobar") so they are handled similar to what the
 # C compiler does itself
 gstomx.conf: gstomx.conf.in
-	cat $^ | $(CPP) -P $(CFLAGS) $(libgstomx_la_CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) - | sed 's/\"\ *\"//g' > $@
+	cat $^ | $(CPP) -P $(DEFS) $(CFLAGS) $(libgstomx_la_CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) - | sed 's/\"\ *\"//g' > $@
 
 # more sed magic to convert the pre-processed config file into a C file
 # containing one big string.  This is linked in and used as the default
