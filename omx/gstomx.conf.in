@@ -1,4 +1,6 @@
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 /* in case of multiple OMX components mapping to a single gst-openmax element
  * class, a dynamic subclass can be created by specifying the gst-openmax
