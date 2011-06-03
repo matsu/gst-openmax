@@ -63,3 +63,7 @@ gstomx_conf.c: gstomx.conf
 	echo "const char *default_config =" > $@
 	cat $^ | sed 's/\"/\\\"/g' | sed 's/^.*/\"&\\\n"/' >> $@
 	echo ";" >> $@
+
+CLEANFILES = \
+	gstomx.conf \
+	gstomx_conf.c
