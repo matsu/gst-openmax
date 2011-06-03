@@ -53,8 +53,13 @@ EXTRA_DIST = headers gstomx.conf gstomx_conf.c
 # Run the C-preprocessor plus some sed voodoo to clean up adjacent strings
 # (ie. "foo" "bar" becomes "foobar") so they are handled similar to what the
 # C compiler does itself
+if EXPERIMENTAL
+GSTOMX_CONF_cppflags = -DEXPERIMENTAL
+else
+GSTOMX_CONF_cppflags =
+endif
 gstomx.conf: gstomx.conf.in
-	cat $^ | $(CPP) -P $(DEFS) $(CFLAGS) $(libgstomx_la_CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) - | sed 's/\"\ *\"//g' > $@
+	cat $^ | $(CPP) -P $(DEFS) $(GSTOMX_CONF_cppflags) $(CFLAGS) $(libgstomx_la_CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) - | sed 's/\"\ *\"//g' > $@
 
 # more sed magic to convert the pre-processed config file into a C file
 # containing one big string.  This is linked in and used as the default
