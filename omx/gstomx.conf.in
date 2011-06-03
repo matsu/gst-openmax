@@ -289,6 +289,6 @@ omx_volume,
   type=GstOmxVolume,
   library-name=libomxil-bellagio.so.0,
   component-name=OMX.st.volume.component,
-  sink=RAW_AUDIO_CAPS("[8000, 48000]", "[1, 8]"),
-  src=RAW_AUDIO_CAPS("[8000, 48000]", "[1, 8]"),
+  sink=RAW_AUDIO_CAPS("44100", "2"),
+  src=RAW_AUDIO_CAPS("44100", "2"),
   rank=0;
