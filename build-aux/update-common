@@ -14,6 +14,3 @@ cp $orig/m4/gst-check.m4 m4/gst-check.m4
 cp $orig/m4/gst-error.m4 m4/gst-error.m4
 cp $orig/m4/gst-plugindir.m4 m4/gst-plugindir.m4
 cp $orig/m4/gst.m4 m4/gst.m4
-cp $orig/m4/shave.m4 m4/shave.m4
-cp $orig/shave-libtool.in shave-libtool.in
-cp $orig/shave.in shave.in
