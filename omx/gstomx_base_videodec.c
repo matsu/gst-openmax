@@ -190,6 +190,19 @@ omx_setup (GstOmxBaseFilter * omx_base)
 
       OMX_SetParameter (gomx->omx_handle, OMX_IndexParamPortDefinition, &param);
     }
+
+    /* Output port configuration */
+    {
+      memset (&param, 0, sizeof (param));
+      param.nSize = sizeof (OMX_PARAM_PORTDEFINITIONTYPE);
+
+      param.nPortIndex = 1;
+      OMX_GetParameter (gomx->omx_handle, OMX_IndexParamPortDefinition, &param);
+
+      param.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
+
+      OMX_SetParameter (gomx->omx_handle, OMX_IndexParamPortDefinition, &param);
+    }
   }
 
   GST_INFO_OBJECT (omx_base, "end");
