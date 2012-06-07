@@ -644,6 +644,11 @@ pad_chain (GstPad * pad, GstBuffer * buf)
 
         buffer_offset += omx_buffer->nFilledLen;
 
+        if (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_PREROLL))
+          omx_buffer->nFlags = OMX_BUFFERFLAG_CODECCONFIG;
+        else
+          omx_buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
+
         GST_LOG_OBJECT (self, "release_buffer");
                 /** @todo untaint buffer */
         g_omx_port_release_buffer (in_port, omx_buffer);
