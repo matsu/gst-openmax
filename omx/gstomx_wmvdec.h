@@ -35,6 +35,10 @@ typedef struct GstOmxWmvDecClass GstOmxWmvDecClass;
 struct GstOmxWmvDec
 {
   GstOmxBaseVideoDec omx_base;
+
+  GstPadSetCapsFunction base_setcapsfunc;
+  GstBuffer *codec_data;
+  guint32 width, height;
 };
 
 struct GstOmxWmvDecClass

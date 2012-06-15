@@ -46,6 +46,53 @@ type_base_init (gpointer g_class)
           gstomx_template_caps (G_TYPE_FROM_CLASS (g_class), "src")));
 }
 
+static gboolean
+gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
+{
+  GstOmxWmvDec *omx_wmvdec;
+  GstOmxBaseFilter *omx_base;
+  GstStructure *structure;
+  const GValue *value;
+  GstCaps *sink_caps;
+
+  omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
+  omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
+
+  GST_INFO_OBJECT (omx_wmvdec, "Enter");
+
+  /* get codec_data */
+  structure = gst_caps_get_structure (caps, 0);
+  if (omx_wmvdec->codec_data != NULL) {
+    gst_buffer_unref (omx_wmvdec->codec_data);
+    omx_wmvdec->codec_data = NULL;
+  }
+
+  sink_caps = gst_caps_copy (caps);
+
+  if ((value = gst_structure_get_value (structure, "codec_data"))) {
+    GstStructure *st;
+
+    omx_wmvdec->codec_data = gst_buffer_ref (gst_value_get_buffer (value));
+    GST_INFO_OBJECT (omx_wmvdec,
+        "codec_data_length=%d", GST_BUFFER_SIZE (omx_wmvdec->codec_data));
+
+    sink_caps = gst_caps_make_writable (sink_caps);
+    st = gst_caps_get_structure (sink_caps, 0);
+    /* To prevent duplication of pushing codec_data in base_filter. */
+    gst_structure_remove_field (st, "codec_data");
+  }
+
+  gst_structure_get_int (structure, "width", (gint *) & omx_wmvdec->width);
+  gst_structure_get_int (structure, "height", (gint *) & omx_wmvdec->height);
+
+  GST_INFO_OBJECT (omx_wmvdec,
+      "picture size = %d x %d", omx_wmvdec->width, omx_wmvdec->height);
+
+  GST_INFO_OBJECT (omx_wmvdec, "setcaps (sink): %" GST_PTR_FORMAT, sink_caps);
+
+  return omx_wmvdec->base_setcapsfunc (pad, sink_caps);
+}
+
 static void
 type_class_init (gpointer g_class, gpointer class_data)
 {
@@ -55,8 +102,20 @@ static void
 type_instance_init (GTypeInstance * instance, gpointer g_class)
 {
   GstOmxBaseVideoDec *omx_base;
+  GstOmxBaseFilter *omx_base_filter;
+  GstOmxWmvDec *omx_wmvdec;
 
   omx_base = GST_OMX_BASE_VIDEODEC (instance);
+  omx_base_filter = GST_OMX_BASE_FILTER (instance);
+  omx_wmvdec = GST_OMX_WMVDEC (instance);
 
   omx_base->compression_format = OMX_VIDEO_CodingWMV;
+
+  omx_wmvdec->base_setcapsfunc = GST_PAD_SETCAPSFUNC (omx_base_filter->sinkpad);
+  gst_pad_set_setcaps_function (omx_base_filter->sinkpad,
+      gst_omx_wmvdec_sink_setcaps);
+
+  omx_wmvdec->codec_data = NULL;
+  omx_wmvdec->width = 0;
+  omx_wmvdec->height = 0;
 }
