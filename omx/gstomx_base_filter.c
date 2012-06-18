@@ -417,17 +417,12 @@ output_loop (gpointer data)
 
         gst_buffer_unref (buf);
       } else {
-        /* This is only meant for the first OpenMAX buffers,
-         * which need to be pre-allocated. */
-        /* Also for the very last one. */
-        ret = gst_pad_alloc_buffer_and_set_caps (self->srcpad,
-            GST_BUFFER_OFFSET_NONE,
-            omx_buffer->nFilledLen, GST_PAD_CAPS (self->srcpad), &buf);
+        buf = gst_buffer_new ();
+        gst_buffer_set_caps (buf, GST_PAD_CAPS (self->srcpad));
 
         if (G_LIKELY (buf)) {
-          memcpy (GST_BUFFER_DATA (buf),
-              omx_buffer->pBuffer + omx_buffer->nOffset,
-              omx_buffer->nFilledLen);
+          GST_BUFFER_DATA (buf) = omx_buffer->pBuffer + omx_buffer->nOffset;
+          GST_BUFFER_SIZE (buf) = omx_buffer->nFilledLen;
           if (self->use_timestamps) {
             GST_BUFFER_TIMESTAMP (buf) =
                 gst_util_uint64_scale_int (omx_buffer->nTimeStamp, GST_SECOND,
