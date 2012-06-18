@@ -32,11 +32,14 @@ typedef struct GstOmxWmvDecClass GstOmxWmvDecClass;
 
 #include "gstomx_base_videodec.h"
 
+#define SEQ_PARAM_BUF_SIZE 24
+
 struct GstOmxWmvDec
 {
   GstOmxBaseVideoDec omx_base;
 
   GstPadSetCapsFunction base_setcapsfunc;
+  GstPadChainFunction base_chain_func;
   GstBuffer *codec_data;
   guint32 width, height;
 };

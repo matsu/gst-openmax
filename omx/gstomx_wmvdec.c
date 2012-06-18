@@ -93,6 +93,61 @@ gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
   return omx_wmvdec->base_setcapsfunc (pad, sink_caps);
 }
 
+static GstFlowReturn
+gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
+{
+  GstOmxBaseFilter *omx_base;
+  GstOmxWmvDec *omx_wmvdec;
+  guint size;
+  guint8 *data;
+
+  omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
+  omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
+
+  GST_INFO_OBJECT (omx_wmvdec, "Enter");
+
+  /* split sequence parameter set and picture parameter set and other NALU */
+  /* parse AVCDecoderConfigurationRecord */
+  if (omx_wmvdec->codec_data != NULL) {
+    GstBuffer *SeqParabuf = NULL;
+    guint32 *u32ptr;
+    guint8 *u8ptr;
+    GstFlowReturn result;
+
+    size = GST_BUFFER_SIZE (omx_wmvdec->codec_data);
+    data = GST_BUFFER_DATA (omx_wmvdec->codec_data);
+
+    /* create a new buffer */
+    SeqParabuf = gst_buffer_new_and_alloc (SEQ_PARAM_BUF_SIZE);
+    u32ptr = (guint32 *) GST_BUFFER_DATA (SeqParabuf);
+
+    /* create sequence header */
+    u32ptr[0] = 0xC5000000;
+    u32ptr[1] = 0x00000004;
+    u8ptr = (guint8 *) & u32ptr[2];
+    u8ptr[0] = data[0];
+    u8ptr[1] = data[1];
+    u8ptr[2] = data[2];
+    u8ptr[3] = data[3];
+    u32ptr[3] = omx_wmvdec->height;
+    u32ptr[4] = omx_wmvdec->width;
+    u32ptr[5] = 0x0000000C;
+
+    GST_BUFFER_FLAG_SET (SeqParabuf, GST_BUFFER_FLAG_PREROLL);
+
+    gst_buffer_unref (omx_wmvdec->codec_data);
+    omx_wmvdec->codec_data = NULL;
+
+    result = omx_wmvdec->base_chain_func (pad, SeqParabuf);
+    if (result != GST_FLOW_OK) {
+      GST_ERROR_OBJECT (omx_wmvdec, "failed to push sequence header");
+      return result;
+    }
+  }
+
+  return omx_wmvdec->base_chain_func (pad, buf);
+}
+
 static void
 type_class_init (gpointer g_class, gpointer class_data)
 {
@@ -114,6 +169,10 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
   omx_wmvdec->base_setcapsfunc = GST_PAD_SETCAPSFUNC (omx_base_filter->sinkpad);
   gst_pad_set_setcaps_function (omx_base_filter->sinkpad,
       gst_omx_wmvdec_sink_setcaps);
+
+  omx_wmvdec->base_chain_func = GST_PAD_CHAINFUNC (omx_base_filter->sinkpad);
+  gst_pad_set_chain_function (omx_base_filter->sinkpad,
+      gst_omx_wmvdec_pad_chain);
 
   omx_wmvdec->codec_data = NULL;
   omx_wmvdec->width = 0;
