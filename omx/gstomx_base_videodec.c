@@ -43,6 +43,7 @@ settings_changed_cb (GOmxCore * core)
   guint width;
   guint height;
   guint32 format = 0;
+  gint32 stride, chroma_byte_offset;
 
   omx_base = core->object;
   self = GST_OMX_BASE_VIDEODEC (omx_base);
@@ -78,6 +79,9 @@ settings_changed_cb (GOmxCore * core)
       default:
         break;
     }
+
+    stride = param.format.video.nStride;
+    chroma_byte_offset = stride * param.format.video.nSliceHeight;
   }
 
   {
@@ -95,6 +99,10 @@ settings_changed_cb (GOmxCore * core)
     else
       /* FIXME this is a workaround for xvimagesink */
       gst_structure_set (struc, "framerate", GST_TYPE_FRACTION, 0, 1, NULL);
+
+    gst_structure_set (struc, "rowstride", G_TYPE_INT, stride, NULL);
+    gst_structure_set (struc, "chroma_byte_offset", G_TYPE_INT,
+        chroma_byte_offset, NULL);
 
     gst_caps_append_structure (new_caps, struc);
 
