@@ -42,6 +42,7 @@ struct GstOmxWmvDec
   GstPadChainFunction base_chain_func;
   GstBuffer *codec_data;
   guint32 width, height;
+  gboolean is_ap;
 };
 
 struct GstOmxWmvDecClass

@@ -54,6 +54,7 @@ gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
   GstStructure *structure;
   const GValue *value;
   GstCaps *sink_caps;
+  guint32 fourcc;
 
   omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
   omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
@@ -88,6 +89,16 @@ gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
   GST_INFO_OBJECT (omx_wmvdec,
       "picture size = %d x %d", omx_wmvdec->width, omx_wmvdec->height);
 
+  if (gst_structure_get_fourcc (structure, "format", &fourcc)) {
+    if (fourcc == GST_MAKE_FOURCC ('W', 'V', 'C', '1')) {
+      GST_INFO_OBJECT (omx_wmvdec, "stream type is Advanced Profile");
+      omx_wmvdec->is_ap = TRUE;
+    } else {
+      GST_INFO_OBJECT (omx_wmvdec, "stream type is Simple/Main Profile");
+      omx_wmvdec->is_ap = FALSE;
+    }
+  }
+
   GST_INFO_OBJECT (omx_wmvdec, "setcaps (sink): %" GST_PTR_FORMAT, sink_caps);
 
   return omx_wmvdec->base_setcapsfunc (pad, sink_caps);
@@ -106,13 +117,26 @@ gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
 
   GST_INFO_OBJECT (omx_wmvdec, "Enter");
 
-  /* split sequence parameter set and picture parameter set and other NALU */
-  /* parse AVCDecoderConfigurationRecord */
-  if (omx_wmvdec->codec_data != NULL) {
+  if (omx_wmvdec->codec_data == NULL)
+    goto no_codec_data;
+
+  if (omx_wmvdec->is_ap) {
+    GstCaps *caps;
+
+    caps = GST_BUFFER_CAPS (buf);
+
+    buf = gst_buffer_join (omx_wmvdec->codec_data, buf);
+    gst_buffer_set_caps (buf, caps);
+
+    omx_wmvdec->codec_data = NULL;
+  } else {
     GstBuffer *SeqParabuf = NULL;
     guint32 *u32ptr;
     guint8 *u8ptr;
     GstFlowReturn result;
+
+    /* split sequence parameter set and picture parameter set and other NALU */
+    /* and parse AVCDecoderConfigurationRecord */
 
     size = GST_BUFFER_SIZE (omx_wmvdec->codec_data);
     data = GST_BUFFER_DATA (omx_wmvdec->codec_data);
@@ -144,6 +168,8 @@ gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
       return result;
     }
   }
+
+no_codec_data:
 
   return omx_wmvdec->base_chain_func (pad, buf);
 }
@@ -177,4 +203,5 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
   omx_wmvdec->codec_data = NULL;
   omx_wmvdec->width = 0;
   omx_wmvdec->height = 0;
+  omx_wmvdec->is_ap = FALSE;
 }
