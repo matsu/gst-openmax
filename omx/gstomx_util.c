@@ -445,6 +445,7 @@ g_omx_core_wait_for_done (GOmxCore * core)
 void
 g_omx_core_flush_start (GOmxCore * core)
 {
+  g_omx_core_pause (core);
   core_for_each_port (core, g_omx_port_pause);
 }
 
@@ -453,6 +454,9 @@ g_omx_core_flush_stop (GOmxCore * core)
 {
   core_for_each_port (core, g_omx_port_flush);
   core_for_each_port (core, g_omx_port_resume);
+
+  change_state (core, OMX_StateExecuting);
+  wait_for_state (core, OMX_StateExecuting);
 }
 
 /*
@@ -645,6 +649,9 @@ g_omx_port_flush (GOmxPort * port)
       omx_buffer->nFilledLen = 0;
       g_omx_port_release_buffer (port, omx_buffer);
     }
+    OMX_SendCommand (port->core->omx_handle, OMX_CommandFlush, port->port_index,
+        NULL);
+    g_sem_down (port->core->flush_sem);
   } else {
     OMX_SendCommand (port->core->omx_handle, OMX_CommandFlush, port->port_index,
         NULL);
