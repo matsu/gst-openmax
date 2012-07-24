@@ -199,9 +199,11 @@ omx_setup (GstOmxBaseFilter * omx_base)
       OMX_SetParameter (gomx->omx_handle, OMX_IndexParamPortDefinition, &param);
     }
 
+    memset (&param, 0, sizeof (param));
+    G_OMX_INIT_PARAM (param);
+
     /* Output port configuration */
     {
-      memset (&param, 0, sizeof (param));
       param.nSize = sizeof (OMX_PARAM_PORTDEFINITIONTYPE);
 
       param.nPortIndex = 1;
