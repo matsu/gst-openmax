@@ -280,10 +280,13 @@ g_omx_core_free (GOmxCore * core)
 void
 g_omx_core_init (GOmxCore * core)
 {
+  int retry = 1;
+
   GST_DEBUG_OBJECT (core->object, "loading: %s %s (%s)",
       core->component_name,
       core->component_role ? core->component_role : "", core->library_name);
 
+reinit:
   core->imp = request_imp (core->library_name);
 
   if (!core->imp)
@@ -312,6 +315,10 @@ g_omx_core_init (GOmxCore * core)
       OMX_SetParameter (core->omx_handle, OMX_IndexParamStandardComponentRole,
           &param);
     }
+  } else if (retry-- > 0) {
+    release_imp (core->imp);
+    GST_INFO_OBJECT (core->object, "reinitializing the OMXIL instance");
+    goto reinit;
   }
 }
 
