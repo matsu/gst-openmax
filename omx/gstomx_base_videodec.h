@@ -40,6 +40,8 @@ struct GstOmxBaseVideoDec
   OMX_VIDEO_CODINGTYPE compression_format;
   gint framerate_num;
   gint framerate_denom;
+
+  GstQueryType query_type_tladdr;
 };
 
 struct GstOmxBaseVideoDecClass

@@ -52,7 +52,7 @@ type_class_init (gpointer g_class, gpointer class_data)
 }
 
 /* should we be overriding the settings_changed_cb from parent class like this?? */
-static void
+static gboolean
 settings_changed_cb (GOmxCore * core)
 {
   GstOmxBaseFilter *omx_base;
@@ -74,6 +74,8 @@ settings_changed_cb (GOmxCore * core)
     GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
     gst_pad_set_caps (omx_base->srcpad, new_caps);
   }
+
+  return TRUE;
 }
 
 static void

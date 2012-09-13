@@ -38,7 +38,7 @@ typedef struct GOmxImp GOmxImp;
 typedef struct GOmxSymbolTable GOmxSymbolTable;
 typedef enum GOmxPortType GOmxPortType;
 
-typedef void (*GOmxCb) (GOmxCore * core);
+typedef gboolean (*GOmxCb) (GOmxCore * core);
 typedef void (*GOmxPortCb) (GOmxPort * port);
 
 /* Enums. */

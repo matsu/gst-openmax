@@ -51,7 +51,7 @@ type_class_init (gpointer g_class, gpointer class_data)
 {
 }
 
-static void
+static gboolean
 settings_changed_cb (GOmxCore * core)
 {
   GstOmxBaseVideoEnc *omx_base;
@@ -90,6 +90,8 @@ settings_changed_cb (GOmxCore * core)
     GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
     gst_pad_set_caps (omx_base_filter->srcpad, new_caps);
   }
+
+  return TRUE;
 }
 
 static void

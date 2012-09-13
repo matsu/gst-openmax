@@ -62,7 +62,7 @@ setcaps (GstBaseSrc * gst_src, GstCaps * caps)
   return TRUE;
 }
 
-static void
+static gboolean
 settings_changed_cb (GOmxCore * core)
 {
   GstOmxBaseSrc *omx_base;
@@ -72,6 +72,8 @@ settings_changed_cb (GOmxCore * core)
   GST_DEBUG_OBJECT (omx_base, "settings changed");
 
     /** @todo properly set the capabilities */
+
+  return TRUE;
 }
 
 static void

@@ -31,6 +31,7 @@ G_BEGIN_DECLS
 typedef struct GstOmxBaseFilter GstOmxBaseFilter;
 typedef struct GstOmxBaseFilterClass GstOmxBaseFilterClass;
 typedef void (*GstOmxBaseFilterCb) (GstOmxBaseFilter * self);
+typedef gboolean (*GstOmxBaseFilterReadyCb) (GstOmxBaseFilter * self);
 
 #include "gstomx_util.h"
 #include <async_queue.h>
@@ -53,6 +54,8 @@ struct GstOmxBaseFilter
   GstOmxBaseFilterCb omx_setup;
   GstFlowReturn last_pad_push_return;
   GstBuffer *codec_data;
+
+  GstOmxBaseFilterReadyCb ready_cb;
 
     /** @todo these are hacks, OpenMAX IL spec should be revised. */
   gboolean share_input_buffer;

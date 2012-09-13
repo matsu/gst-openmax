@@ -368,8 +368,14 @@ output_loop (gpointer data)
         if (!caps) {
                     /** @todo We shouldn't be doing this. */
           GST_WARNING_OBJECT (self, "faking settings changed notification");
-          if (gomx->settings_changed_cb)
-            gomx->settings_changed_cb (gomx);
+          if (gomx->settings_changed_cb) {
+            if (!gomx->settings_changed_cb (gomx)) {
+              GST_ELEMENT_ERROR (self, STREAM, FAILED, (NULL),
+                  ("T/L addressing unsupported by sink"));
+              ret = GST_FLOW_ERROR;
+              goto leave;
+            }
+          }
         } else {
           GST_LOG_OBJECT (self, "caps already fixed: %" GST_PTR_FORMAT, caps);
           gst_caps_unref (caps);

@@ -36,7 +36,36 @@ type_class_init (gpointer g_class, gpointer class_data)
 {
 }
 
-static void
+static gboolean
+query_tladdressing_supported (GstOmxBaseFilter * omx_base)
+{
+  GstOmxBaseVideoDec *self;
+  gboolean result = FALSE;
+  GstPad *peer;
+  GstStructure *structure;
+  GstQuery *query;
+
+  self = GST_OMX_BASE_VIDEODEC (omx_base);
+  peer = gst_pad_get_peer (omx_base->srcpad);
+  structure = gst_structure_empty_new ("GstQueryTLAddressingSupported");
+  gst_structure_set (structure, "tladdressing-supported", G_TYPE_BOOLEAN, FALSE,
+      NULL);
+  self->query_type_tladdr = gst_query_type_register ("tladdressing-supported",
+      "whether dealing with T/L addressing as a capability or not");
+  query = gst_query_new_application (self->query_type_tladdr, structure);
+  if (gst_pad_query (peer, query)) {
+    gst_structure_get_boolean (structure, "tladdressing-supported", &result);
+  }
+
+  gst_query_unref (query);
+  gst_object_unref (peer);
+
+  GST_INFO_OBJECT (self, "A downstream sink %s T/L addressing.",
+      result ? "supports" : "does not support");
+  return result;
+}
+
+static gboolean
 settings_changed_cb (GOmxCore * core)
 {
   GstOmxBaseFilter *omx_base;
@@ -118,6 +147,8 @@ settings_changed_cb (GOmxCore * core)
       ALIGN2UP (stride, stride);
       chroma_byte_offset = stride * ALIGN32 (sliceheight);
       uiomux_register ((void *) 0x80000000, 0x80000000, 0x20000000);
+      if (omx_base->ready_cb && !omx_base->ready_cb (omx_base))
+        return FALSE;
     }
     gst_structure_set (struc, "rowstride", G_TYPE_INT, stride, NULL);
     gst_structure_set (struc, "chroma_byte_offset", G_TYPE_INT,
@@ -128,6 +159,8 @@ settings_changed_cb (GOmxCore * core)
     GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
     gst_pad_set_caps (omx_base->srcpad, new_caps);
   }
+
+  return TRUE;
 }
 
 static gboolean
@@ -192,6 +225,19 @@ sink_setcaps (GstPad * pad, GstCaps * caps)
   return gst_pad_set_caps (pad, caps);
 }
 
+static gboolean
+ready_cb (GstOmxBaseFilter * omx_base)
+{
+  gboolean ret = TRUE;
+  GOmxCore *gomx;
+  gomx = (GOmxCore *) omx_base->gomx;
+
+  if (!gomx->postproc)
+    ret = query_tladdressing_supported (omx_base);
+
+  return ret;
+}
+
 static void
 omx_setup (GstOmxBaseFilter * omx_base)
 {
@@ -245,6 +291,7 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
   omx_base = GST_OMX_BASE_FILTER (instance);
 
   omx_base->omx_setup = omx_setup;
+  omx_base->ready_cb = ready_cb;
 
   omx_base->gomx->settings_changed_cb = settings_changed_cb;
 
