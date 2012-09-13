@@ -21,6 +21,7 @@
 
 #include "gstomx_base_videodec.h"
 #include "gstomx.h"
+#include <vpu5/OMX_VPU5Ext.h>
 
 GSTOMX_BOILERPLATE (GstOmxBaseVideoDec, gst_omx_base_videodec, GstOmxBaseFilter,
     GST_OMX_BASE_FILTER_TYPE);
@@ -80,7 +81,7 @@ settings_changed_cb (GOmxCore * core)
         break;
     }
 
-    stride = param.format.video.nStride;
+    stride = omx_base->tiled_output ? param.format.video.nStride : width;
     chroma_byte_offset = stride * param.format.video.nSliceHeight;
   }
 
@@ -212,6 +213,15 @@ omx_setup (GstOmxBaseFilter * omx_base)
       param.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
 
       OMX_SetParameter (gomx->omx_handle, OMX_IndexParamPortDefinition, &param);
+    }
+
+    /* Enable the software rendering mode if the T/L addressing disabled */
+    if (!omx_base->tiled_output) {
+      OMX_INDEXTYPE index;
+      OMX_BOOL on = OMX_TRUE;
+
+      OMX_GetExtensionIndex (gomx->omx_handle, OMX_VPU5_SoftwareRender, &index);
+      OMX_SetParameter (gomx->omx_handle, index, &on);
     }
   }
 

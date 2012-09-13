@@ -47,6 +47,7 @@ struct GstOmxBaseFilter
   GOmxPort *out_port;
 
   gboolean use_timestamps;   /** @todo remove; timestamps should always be used */
+  gboolean tiled_output;
   gboolean ready;
   GMutex *ready_lock;
 

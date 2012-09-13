@@ -30,6 +30,7 @@ enum
   ARG_USE_TIMESTAMPS = GSTOMX_NUM_COMMON_PROP,
   ARG_NUM_INPUT_BUFFERS,
   ARG_NUM_OUTPUT_BUFFERS,
+  ARG_TILED_OUTPUT,
 };
 
 static void init_interfaces (GType type);
@@ -211,6 +212,9 @@ set_property (GObject * obj,
       OMX_SetParameter (omx_handle, OMX_IndexParamPortDefinition, &param);
     }
       break;
+    case ARG_TILED_OUTPUT:
+      self->tiled_output = g_value_get_boolean (value);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
       break;
@@ -252,6 +256,9 @@ get_property (GObject * obj, guint prop_id, GValue * value, GParamSpec * pspec)
 
       g_value_set_uint (value, param.nBufferCountActual);
     }
+      break;
+    case ARG_TILED_OUTPUT:
+      g_value_set_boolean (value, self->tiled_output);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
@@ -296,6 +303,10 @@ type_class_init (gpointer g_class, gpointer class_data)
         g_param_spec_uint ("output-buffers", "Output buffers",
             "The number of OMX output buffers",
             1, 10, 4, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+    g_object_class_install_property (gobject_class, ARG_TILED_OUTPUT,
+        g_param_spec_boolean ("tiled-output", "Tiled image output",
+            "Output tiled image data for efficient hardware rendering",
+            FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   }
 }
 
@@ -421,7 +432,10 @@ output_loop (gpointer data)
         gst_buffer_set_caps (buf, GST_PAD_CAPS (self->srcpad));
 
         if (G_LIKELY (buf)) {
-          GST_BUFFER_DATA (buf) = omx_buffer->pBuffer + omx_buffer->nOffset;
+          if (self->tiled_output)
+            GST_BUFFER_DATA (buf) = omx_buffer->pPlatformPrivate;
+          else
+            GST_BUFFER_DATA (buf) = omx_buffer->pBuffer + omx_buffer->nOffset;
           GST_BUFFER_SIZE (buf) = omx_buffer->nFilledLen;
           if (self->use_timestamps) {
             GST_BUFFER_TIMESTAMP (buf) =
@@ -844,6 +858,7 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
   GST_LOG_OBJECT (self, "begin");
 
   self->use_timestamps = TRUE;
+  self->tiled_output = FALSE;
 
   self->gomx = gstomx_core_new (self, G_TYPE_FROM_CLASS (g_class));
   self->in_port = g_omx_core_new_port (self->gomx, 0);
