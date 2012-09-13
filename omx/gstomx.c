@@ -314,6 +314,8 @@ gstomx_get_component_info (void *core, GType type)
   str = gst_structure_get_string (element, "component-role");
   rcore->component_role = g_strdup (str);
 
+  gst_structure_get_boolean (element, "post-processing", &rcore->postproc);
+
   return TRUE;
 }
 
@@ -374,6 +376,11 @@ gstomx_install_property_helper (GObjectClass * gobject_class)
       g_param_spec_string ("library-name", "Library name",
           "Name of the OpenMAX IL implementation library to use",
           NULL, G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class, ARG_POSTPROC,
+      g_param_spec_boolean ("post-processing", "post-processing",
+          "Enable the post processing for I/P transform, T/L addressing, and trimming",
+          TRUE, G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
 }
 
 gboolean
@@ -389,6 +396,9 @@ gstomx_get_property_helper (void *core, guint prop_id, GValue * value)
       return TRUE;
     case ARG_LIBRARY_NAME:
       g_value_set_string (value, gomx->library_name);
+      return TRUE;
+    case ARG_POSTPROC:
+      g_value_set_boolean (value, gomx->postproc);
       return TRUE;
     default:
       return FALSE;

@@ -44,8 +44,8 @@ libgstomx_la_SOURCES += gstomx_amrnbdec.c gstomx_amrnbdec.h \
 			gstomx_filereadersrc.c gstomx_filereadersrc.h
 endif
 
-libgstomx_la_CFLAGS = -I$(srcdir)/headers $(GST_CFLAGS) $(GST_BASE_CFLAGS) -I$(top_srcdir)/util
-libgstomx_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) $(top_builddir)/util/libutil.la
+libgstomx_la_CFLAGS = -I$(srcdir)/headers $(GST_CFLAGS) $(GST_BASE_CFLAGS) $(UIOMUX_CFLAGS) -I$(top_srcdir)/util
+libgstomx_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) $(UIOMUX_LIBS) $(top_builddir)/util/libutil.la
 libgstomx_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 
 EXTRA_DIST = headers gstomx.conf gstomx_conf.c

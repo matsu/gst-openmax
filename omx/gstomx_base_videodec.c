@@ -21,6 +21,7 @@
 
 #include "gstomx_base_videodec.h"
 #include "gstomx.h"
+#include "uiomux/uiomux.h"
 
 GSTOMX_BOILERPLATE (GstOmxBaseVideoDec, gst_omx_base_videodec, GstOmxBaseFilter,
     GST_OMX_BASE_FILTER_TYPE);
@@ -42,6 +43,7 @@ settings_changed_cb (GOmxCore * core)
   GstOmxBaseVideoDec *self;
   guint width;
   guint height;
+  guint sliceheight;
   guint32 format = 0;
   gint32 stride, chroma_byte_offset;
 
@@ -61,6 +63,7 @@ settings_changed_cb (GOmxCore * core)
 
     width = param.format.video.nFrameWidth;
     height = param.format.video.nFrameHeight;
+    sliceheight = param.format.video.nSliceHeight;
     switch (param.format.video.eColorFormat) {
       case OMX_COLOR_FormatYUV420Planar:
       case OMX_COLOR_FormatYUV420PackedPlanar:
@@ -100,6 +103,22 @@ settings_changed_cb (GOmxCore * core)
       /* FIXME this is a workaround for xvimagesink */
       gst_structure_set (struc, "framerate", GST_TYPE_FRACTION, 0, 1, NULL);
 
+#define ALIGN32(_x)     (((_x) + 31) / 32 * 32)
+#define ALIGN2UP(_p, _w)                    \
+    {                                       \
+	    (_p) = ((_w) - 1);       \
+	    (_p) = (_p) | ((_p) >> 1);      \
+	    (_p) = (_p) | ((_p) >> 2);      \
+	    (_p) = (_p) | ((_p) >> 4);      \
+	    (_p) = (_p) | ((_p) >> 8);      \
+	    (_p) = (_p) | ((_p) >> 16);     \
+	    (_p) += 1;                      \
+    }
+    if (!core->postproc) {
+      ALIGN2UP (stride, stride);
+      chroma_byte_offset = stride * ALIGN32 (sliceheight);
+      uiomux_register ((void *) 0x80000000, 0x80000000, 0x20000000);
+    }
     gst_structure_set (struc, "rowstride", G_TYPE_INT, stride, NULL);
     gst_structure_set (struc, "chroma_byte_offset", G_TYPE_INT,
         chroma_byte_offset, NULL);

@@ -88,6 +88,8 @@ struct GOmxCore
   GOmxCb settings_changed_cb;
   GOmxImp *imp;
 
+  gboolean postproc;
+
   gboolean done;
 
   gchar *library_name;

@@ -22,6 +22,7 @@
 #include "gstomx_base_filter.h"
 #include "gstomx.h"
 #include "gstomx_interface.h"
+#include "OMXR_Extension.h"
 
 #include <string.h>             /* for memcpy */
 
@@ -417,11 +418,42 @@ output_loop (gpointer data)
 
         gst_buffer_unref (buf);
       } else {
+        GstCaps *caps = NULL;
+        caps = gst_pad_get_negotiated_caps (self->srcpad);
+        if (!gomx->postproc) {
+          OMXR_MC_VIDEO_DECODERESULTTYPE *result;
+
+          result =
+              (OMXR_MC_VIDEO_DECODERESULTTYPE *) omx_buffer->pOutputPortPrivate;
+          if ((result->ePictureStruct == OMXR_MC_VIDEO_PicStructFieldTopBottom)
+              || (result->ePictureStruct ==
+                  OMXR_MC_VIDEO_PicStructFieldBottomTop)) {
+            GstStructure *structure;
+            caps = gst_caps_make_writable (caps);
+            structure = gst_caps_get_structure (caps, 0);
+            gst_structure_set (structure, "interlaced", G_TYPE_BOOLEAN, TRUE,
+                NULL);
+            gst_structure_set (structure, "field-layout", G_TYPE_STRING,
+                "sequential", NULL);
+          }
+        }
         buf = gst_buffer_new ();
-        gst_buffer_set_caps (buf, GST_PAD_CAPS (self->srcpad));
+        gst_buffer_set_caps (buf, caps);
 
         if (G_LIKELY (buf)) {
-          GST_BUFFER_DATA (buf) = omx_buffer->pBuffer + omx_buffer->nOffset;
+#define ALIGN32(_x)	(((_x) + 31) / 32 * 32)
+          if (!gomx->postproc) {
+            OMXR_MC_VIDEO_DECODERESULTTYPE *result;
+
+            result = (OMXR_MC_VIDEO_DECODERESULTTYPE *)
+                omx_buffer->pOutputPortPrivate;
+            GST_BUFFER_DATA (buf) =
+                (guint8 *) result->pvPhysImageAddressY + omx_buffer->nOffset;
+
+          } else {
+            GST_BUFFER_DATA (buf) = omx_buffer->pBuffer + omx_buffer->nOffset;
+          }
+
           GST_BUFFER_SIZE (buf) = omx_buffer->nFilledLen;
           if (self->use_timestamps) {
             GST_BUFFER_TIMESTAMP (buf) =

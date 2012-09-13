@@ -170,7 +170,7 @@ imp_free (GOmxImp * imp)
 }
 
 static inline GOmxImp *
-request_imp (const gchar * name)
+request_imp (const gchar * name, gboolean disable_postproc)
 {
   GOmxImp *imp = NULL;
 
@@ -188,7 +188,19 @@ request_imp (const gchar * name)
 
   g_mutex_lock (imp->mutex);
   if (imp->client_count == 0) {
+    OMX_ERRORTYPE (*r_config) (OMX_STRING path);
     OMX_ERRORTYPE omx_error;
+#define FILE_OMXR_CFG_NO_IPC	"/usr/lib/omxr/omxr_av_codec_no_ipc.cfg"
+    if (disable_postproc) {
+      r_config = dlsym (imp->dl_handle, "OMXR_SetConfiguration");
+      if (r_config)
+        omx_error = r_config (FILE_OMXR_CFG_NO_IPC);
+      if ((r_config == NULL) || (omx_error != OMX_ErrorNone)) {
+        g_mutex_unlock (imp->mutex);
+        return NULL;
+      }
+    }
+
     omx_error = imp->sym_table.init ();
     if (omx_error) {
       g_mutex_unlock (imp->mutex);
@@ -287,7 +299,7 @@ g_omx_core_init (GOmxCore * core)
       core->component_role ? core->component_role : "", core->library_name);
 
 reinit:
-  core->imp = request_imp (core->library_name);
+  core->imp = request_imp (core->library_name, !core->postproc);
 
   if (!core->imp)
     return;

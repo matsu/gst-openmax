@@ -71,6 +71,9 @@ AG_GST_CHECK_GST($GST_MAJORMINOR, [$GST_REQUIRED], yes)
 AG_GST_CHECK_GST_BASE($GST_MAJORMINOR, [$GST_REQUIRED], yes)
 AG_GST_CHECK_GST_CHECK($GST_MAJORMINOR, [$GST_REQUIRED], [no])
 
+dnl Check for uiomux
+PKG_CHECK_MODULES([UIOMUX], [uiomux])
+
 dnl ** finalize ***
 
 dnl set license and copyright notice
