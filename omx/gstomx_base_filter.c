@@ -682,12 +682,6 @@ pad_chain (GstPad * pad, GstBuffer * buf)
         else
           omx_buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
 
-        if ((GST_BUFFER_TIMESTAMP (buf) == 0) ||
-            (GST_BUFFER_TIMESTAMP (buf) == GST_CLOCK_TIME_NONE)) {
-          static guint64 cnt = 0;
-          omx_buffer->nTimeStamp = cnt++;
-        }
-
         GST_LOG_OBJECT (self, "release_buffer");
                 /** @todo untaint buffer */
         g_omx_port_release_buffer (in_port, omx_buffer);
