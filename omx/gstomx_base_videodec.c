@@ -147,6 +147,9 @@ settings_changed_cb (GOmxCore * core)
       ALIGN2UP (stride, stride);
       chroma_byte_offset = stride * ALIGN32 (sliceheight);
       uiomux_register ((void *) 0x80000000, 0x80000000, 0x20000000);
+#define OMXR_TILE_WIDTH	  32
+      gst_structure_set (struc, "tile-width", G_TYPE_INT, OMXR_TILE_WIDTH,
+          NULL);
       if (omx_base->ready_cb && !omx_base->ready_cb (omx_base))
         return FALSE;
     }
