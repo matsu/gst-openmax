@@ -451,6 +451,16 @@ output_loop (gpointer data)
         gst_buffer_set_caps (buf, caps);
 
         if (G_LIKELY (buf)) {
+          gint chroma_byte_offset;
+          GstStructure *structure;
+
+          structure = gst_caps_get_structure (caps, 0);
+          if (!gst_structure_get_int (structure, "chroma_byte_offset",
+                  &chroma_byte_offset)) {
+            GST_ERROR_OBJECT (self, "couldn't get chroma_byte_offset");
+            ret = GST_FLOW_ERROR;
+            goto leave;
+          }
 #define ALIGN32(_x)	(((_x) + 31) / 32 * 32)
           if (!gomx->postproc) {
             OMXR_MC_VIDEO_DECODERESULTTYPE *result;
@@ -459,12 +469,12 @@ output_loop (gpointer data)
                 omx_buffer->pOutputPortPrivate;
             GST_BUFFER_DATA (buf) =
                 (guint8 *) result->pvPhysImageAddressY + omx_buffer->nOffset;
-
+            GST_BUFFER_SIZE (buf) = chroma_byte_offset * 3 / 2;
           } else {
             GST_BUFFER_DATA (buf) = omx_buffer->pBuffer + omx_buffer->nOffset;
+            GST_BUFFER_SIZE (buf) = omx_buffer->nFilledLen;
           }
 
-          GST_BUFFER_SIZE (buf) = omx_buffer->nFilledLen;
           if (self->use_timestamps) {
             GST_BUFFER_TIMESTAMP (buf) =
                 gst_util_uint64_scale_int (omx_buffer->nTimeStamp, GST_SECOND,
