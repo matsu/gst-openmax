@@ -428,19 +428,23 @@ output_loop (gpointer data)
         caps = gst_pad_get_negotiated_caps (self->srcpad);
         if (!gomx->postproc) {
           OMXR_MC_VIDEO_DECODERESULTTYPE *result;
+          GstStructure *structure;
+
+          caps = gst_caps_make_writable (caps);
+          structure = gst_caps_get_structure (caps, 0);
 
           result =
               (OMXR_MC_VIDEO_DECODERESULTTYPE *) omx_buffer->pOutputPortPrivate;
           if ((result->ePictureStruct == OMXR_MC_VIDEO_PicStructFieldTopBottom)
               || (result->ePictureStruct ==
                   OMXR_MC_VIDEO_PicStructFieldBottomTop)) {
-            GstStructure *structure;
-            caps = gst_caps_make_writable (caps);
-            structure = gst_caps_get_structure (caps, 0);
             gst_structure_set (structure, "interlaced", G_TYPE_BOOLEAN, TRUE,
                 NULL);
             gst_structure_set (structure, "field-layout", G_TYPE_STRING,
                 "sequential", NULL);
+          } else {
+            if (gst_structure_has_field (structure, "next_field_offset"))
+              gst_structure_remove_field (structure, "next_field_offset");
           }
         }
         buf = gst_buffer_new ();

@@ -152,6 +152,9 @@ settings_changed_cb (GOmxCore * core)
           NULL);
       if (omx_base->ready_cb && !omx_base->ready_cb (omx_base))
         return FALSE;
+
+      gst_structure_set (struc, "next_field_offset", G_TYPE_INT,
+          chroma_byte_offset / 2, NULL);
     }
     gst_structure_set (struc, "rowstride", G_TYPE_INT, stride, NULL);
     gst_structure_set (struc, "chroma_byte_offset", G_TYPE_INT,
