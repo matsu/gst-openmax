@@ -141,10 +141,14 @@ settings_changed_cb (GOmxCore * core)
       /* FIXME this is a workaround for xvimagesink */
       gst_structure_set (struc, "framerate", GST_TYPE_FRACTION, 0, 1, NULL);
 
+    if (omx_base->tiled_output) {
 #define OMXR_TILE_WIDTH	  32
-    if (omx_base->tiled_output)
       gst_structure_set (struc, "tile-width", G_TYPE_INT, OMXR_TILE_WIDTH,
           NULL);
+#define OMXR_TILE_HEIGHT  32
+      gst_structure_set (struc, "tile-height", G_TYPE_INT, OMXR_TILE_HEIGHT,
+          NULL);
+    }
 
     gst_structure_set (struc, "rowstride", G_TYPE_INT, stride, NULL);
     gst_structure_set (struc, "chroma_byte_offset", G_TYPE_INT,
