@@ -112,7 +112,9 @@ settings_changed_cb (GOmxCore * core)
         break;
     }
 
-    stride = param.format.video.nStride;
+    stride =
+        (core->postproc) ? param.format.video.nStride : param.format.video.
+        nFrameWidth;
     chroma_byte_offset = stride * param.format.video.nSliceHeight;
   }
 
@@ -144,7 +146,10 @@ settings_changed_cb (GOmxCore * core)
 	    (_p) += 1;                      \
     }
     if (!core->postproc) {
-      ALIGN2UP (stride, stride);
+      if (stride <= 256)
+        stride = 256;
+      else
+        ALIGN2UP (stride, stride);
       chroma_byte_offset = stride * ALIGN32 (sliceheight);
       uiomux_register ((void *) 0x80000000, 0x80000000, 0x20000000);
 #define OMXR_TILE_WIDTH	  32
