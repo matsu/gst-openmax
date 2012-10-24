@@ -173,6 +173,7 @@ static inline GOmxImp *
 request_imp (const gchar * name, gboolean disable_postproc)
 {
   GOmxImp *imp = NULL;
+  int retry = 1;
 
   g_mutex_lock (imp_mutex);
   imp = g_hash_table_lookup (implementations, name);
@@ -187,6 +188,7 @@ request_imp (const gchar * name, gboolean disable_postproc)
     return NULL;
 
   g_mutex_lock (imp->mutex);
+reinit:
   if (imp->client_count == 0) {
     OMX_ERRORTYPE (*r_config) (OMX_STRING path);
     OMX_ERRORTYPE omx_error;
@@ -203,6 +205,10 @@ request_imp (const gchar * name, gboolean disable_postproc)
 
     omx_error = imp->sym_table.init ();
     if (omx_error) {
+      if (retry-- > 0) {
+        imp->sym_table.deinit ();
+        goto reinit;
+      }
       g_mutex_unlock (imp->mutex);
       return NULL;
     }
