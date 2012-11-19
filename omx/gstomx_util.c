@@ -730,9 +730,6 @@ wait_for_state (GOmxCore * core, OMX_STATETYPE state)
 
   g_mutex_lock (core->omx_state_mutex);
 
-  if (core->omx_error != OMX_ErrorNone)
-    goto leave;
-
   g_get_current_time (&tv);
   g_time_val_add (&tv, 15 * G_USEC_PER_SEC);
 
