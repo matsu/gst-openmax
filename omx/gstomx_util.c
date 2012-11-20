@@ -445,13 +445,13 @@ g_omx_core_wait_for_done (GOmxCore * core)
 void
 g_omx_core_flush_start (GOmxCore * core)
 {
-  g_omx_core_pause (core);
   core_for_each_port (core, g_omx_port_pause);
 }
 
 void
 g_omx_core_flush_stop (GOmxCore * core)
 {
+  g_omx_core_pause (core);
   core_for_each_port (core, g_omx_port_flush);
   core_for_each_port (core, g_omx_port_resume);
 
