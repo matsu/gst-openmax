@@ -706,6 +706,8 @@ g_omx_port_finish (GOmxPort * port)
 static inline void
 change_state (GOmxCore * core, OMX_STATETYPE state)
 {
+  g_mutex_lock (core->omx_state_mutex);
+
   GST_DEBUG_OBJECT (core->object, "state=%d", state);
   OMX_SendCommand (core->omx_handle, OMX_CommandStateSet, state, NULL);
 }
@@ -727,8 +729,6 @@ wait_for_state (GOmxCore * core, OMX_STATETYPE state)
 {
   GTimeVal tv;
   gboolean signaled;
-
-  g_mutex_lock (core->omx_state_mutex);
 
   g_get_current_time (&tv);
   g_time_val_add (&tv, 15 * G_USEC_PER_SEC);
