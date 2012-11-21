@@ -25,6 +25,8 @@
 
 #include "gstomx.h"
 
+#include "OMXR_Extension.h"
+
 GST_DEBUG_CATEGORY (gstomx_util_debug);
 
 /*
@@ -827,6 +829,36 @@ got_buffer (GOmxCore * core, GOmxPort * port, OMX_BUFFERHEADERTYPE * omx_buffer)
   }
 }
 
+static gboolean
+is_err_type_state_change (OMX_ERRORTYPE err)
+{
+  gboolean ret;
+
+  switch (err) {
+    case OMX_ErrorInsufficientResources:
+    case OMX_ErrorUndefined:
+    case OMX_ErrorInvalidComponent:
+    case OMX_ErrorBadParameter:
+    case OMX_ErrorInvalidState:
+    case OMX_ErrorVersionMismatch:
+    case OMX_ErrorTimeout:
+    case OMX_ErrorBadPortIndex:
+    case OMX_ErrorIncorrectStateTransition:
+    case OMX_ErrorSameState:
+    case OMXR_MGR_ErrorInvalidHandle:
+    case OMXR_MGR_ErrorNoSignal:
+    case OMXR_MGR_ErrorOsWrapper:
+    case OMXR_MGR_ErrorSectionNotFound:
+      ret = TRUE;
+      break;
+    default:
+      ret = FALSE;
+      break;
+  }
+
+  return ret;
+}
+
 /*
  * OpenMAX IL callbacks.
  */
@@ -888,10 +920,16 @@ EventHandler (OMX_HANDLETYPE omx_handle,
           omx_error_to_str (data_1), data_1);
       /* component might leave us waiting for buffers, unblock */
       g_omx_core_flush_start (core);
-      /* unlock wait_for_state */
-      g_mutex_lock (core->omx_state_mutex);
-      g_cond_signal (core->omx_state_condition);
-      g_mutex_unlock (core->omx_state_mutex);
+      /*
+       * This signal should be sent when an error is related to changing state
+       * by calling OMX_SendCommand().
+       */
+      if (is_err_type_state_change (core->omx_error)) {
+        /* unlock wait_for_state */
+        g_mutex_lock (core->omx_state_mutex);
+        g_cond_signal (core->omx_state_condition);
+        g_mutex_unlock (core->omx_state_mutex);
+      }
       break;
     }
     default:
