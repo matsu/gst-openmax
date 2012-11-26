@@ -756,7 +756,7 @@ pad_event (GstPad * pad, GstEvent * event)
           omx_buffer = g_omx_port_request_buffer (in_port);
 
           if (G_LIKELY (omx_buffer)) {
-            omx_buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+            omx_buffer->nFlags = OMX_BUFFERFLAG_EOS;
 
             GST_LOG_OBJECT (self, "release_buffer");
             /* foo_buffer_untaint (omx_buffer); */
