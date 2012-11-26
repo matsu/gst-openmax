@@ -930,6 +930,9 @@ EventHandler (OMX_HANDLETYPE omx_handle,
         g_cond_signal (core->omx_state_condition);
         g_mutex_unlock (core->omx_state_mutex);
       }
+
+      GST_ELEMENT_ERROR (core->object, STREAM, FAILED, (NULL),
+          ("Error from OpenMAX component"));
       break;
     }
     default:

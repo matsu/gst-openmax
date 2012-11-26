@@ -723,25 +723,18 @@ leave:
 
   /* special conditions */
 out_flushing:
-  {
-    const gchar *error_msg = NULL;
-
-    if (gomx->omx_error) {
-      error_msg = "Error from OpenMAX component";
-    } else if (gomx->omx_state != OMX_StateExecuting &&
-        gomx->omx_state != OMX_StatePause) {
-      error_msg = "OpenMAX component in wrong state";
-    }
-
-    if (error_msg) {
-      GST_ELEMENT_ERROR (self, STREAM, FAILED, (NULL), ("%s", error_msg));
-      ret = GST_FLOW_ERROR;
-    }
-
-    gst_buffer_unref (buf);
-
-    goto leave;
+  if (gomx->omx_error)
+    ret = GST_FLOW_ERROR;
+  else if (gomx->omx_state != OMX_StateExecuting &&
+      gomx->omx_state != OMX_StatePause) {
+    GST_ELEMENT_ERROR (self, STREAM, FAILED, (NULL),
+        ("OpenMAX component in wrong state"));
+    ret = GST_FLOW_ERROR;
   }
+
+  gst_buffer_unref (buf);
+
+  goto leave;
 }
 
 static gboolean
