@@ -673,7 +673,8 @@ pad_chain (GstPad * pad, GstBuffer * buf)
         buffer_offset += omx_buffer->nFilledLen;
 
         if (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_PREROLL))
-          omx_buffer->nFlags = OMX_BUFFERFLAG_CODECCONFIG;
+          omx_buffer->nFlags =
+              OMX_BUFFERFLAG_CODECCONFIG | OMX_BUFFERFLAG_ENDOFFRAME;
         else
           omx_buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
 
