@@ -55,6 +55,7 @@ gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
   const GValue *value;
   GstCaps *sink_caps;
   guint32 fourcc;
+  gboolean result;
 
   omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
   omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
@@ -99,9 +100,13 @@ gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
     }
   }
 
+  result = omx_wmvdec->base_setcapsfunc (pad, sink_caps);
+
   GST_INFO_OBJECT (omx_wmvdec, "setcaps (sink): %" GST_PTR_FORMAT, sink_caps);
 
-  return omx_wmvdec->base_setcapsfunc (pad, sink_caps);
+  g_object_unref (omx_wmvdec);
+
+  return result;
 }
 
 static GstFlowReturn
@@ -111,6 +116,7 @@ gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
   GstOmxWmvDec *omx_wmvdec;
   guint size;
   guint8 *data;
+  GstFlowReturn result;
 
   omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
   omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
@@ -133,7 +139,6 @@ gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
     GstBuffer *SeqParabuf = NULL;
     guint32 *u32ptr;
     guint8 *u8ptr;
-    GstFlowReturn result;
 
     /* split sequence parameter set and picture parameter set and other NALU */
     /* and parse AVCDecoderConfigurationRecord */
@@ -165,13 +170,18 @@ gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
     result = omx_wmvdec->base_chain_func (pad, SeqParabuf);
     if (result != GST_FLOW_OK) {
       GST_ERROR_OBJECT (omx_wmvdec, "failed to push sequence header");
+      g_object_unref (omx_wmvdec);
       return result;
     }
   }
 
 no_codec_data:
 
-  return omx_wmvdec->base_chain_func (pad, buf);
+  result = omx_wmvdec->base_chain_func (pad, buf);
+
+  g_object_unref (omx_wmvdec);
+
+  return result;
 }
 
 static void
