@@ -19,8 +19,10 @@
  *
  */
 
+#include <string.h>             /* for memset */
 #include "gstomx_mpeg4dec.h"
 #include "gstomx.h"
+#include "OMXR_Extension.h"
 
 GSTOMX_BOILERPLATE (GstOmxMpeg4Dec, gst_omx_mpeg4dec, GstOmxBaseVideoDec,
     GST_OMX_BASE_VIDEODEC_TYPE);
@@ -47,6 +49,28 @@ type_base_init (gpointer g_class)
 }
 
 static void
+omx_setup (GstOmxBaseFilter * omx_base)
+{
+  GstOmxMpeg4Dec *omx_mpeg4dec;
+  GOmxCore *gomx;
+  OMXR_MC_VIDEO_PARAM_STREAM_STORE_UNITTYPE store_type;
+
+  omx_mpeg4dec = GST_OMX_MPEG4DEC (omx_base);
+  gomx = (GOmxCore *) omx_base->gomx;
+
+  memset (&store_type, 0, sizeof (store_type));
+  store_type.nSize = sizeof (store_type);
+
+  OMX_GetParameter (gomx->omx_handle, OMXR_MC_IndexParamVideoStreamStoreUnit,
+      &store_type);
+  store_type.eStoreUnit = OMXR_MC_VIDEO_StoreUnitPackedBitstream;
+  OMX_SetParameter (gomx->omx_handle, OMXR_MC_IndexParamVideoStreamStoreUnit,
+      &store_type);
+
+  omx_mpeg4dec->base_omx_setup (omx_base);
+}
+
+static void
 type_class_init (gpointer g_class, gpointer class_data)
 {
 }
@@ -55,8 +79,15 @@ static void
 type_instance_init (GTypeInstance * instance, gpointer g_class)
 {
   GstOmxBaseVideoDec *omx_base;
+  GstOmxBaseFilter *omx_base_filter;
+  GstOmxMpeg4Dec *omx_mpeg4dec;
 
   omx_base = GST_OMX_BASE_VIDEODEC (instance);
+  omx_base_filter = GST_OMX_BASE_FILTER (instance);
+  omx_mpeg4dec = GST_OMX_MPEG4DEC (instance);
 
   omx_base->compression_format = OMX_VIDEO_CodingMPEG4;
+
+  omx_mpeg4dec->base_omx_setup = omx_base_filter->omx_setup;
+  omx_base_filter->omx_setup = omx_setup;
 }

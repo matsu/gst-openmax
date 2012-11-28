@@ -35,6 +35,8 @@ typedef struct GstOmxMpeg4DecClass GstOmxMpeg4DecClass;
 struct GstOmxMpeg4Dec
 {
   GstOmxBaseVideoDec omx_base;
+
+  GstOmxBaseFilterCb base_omx_setup;
 };
 
 struct GstOmxMpeg4DecClass
