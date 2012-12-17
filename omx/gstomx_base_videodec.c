@@ -34,9 +34,46 @@ type_base_init (gpointer g_class)
 static GstStateChangeReturn
 change_state (GstElement * element, GstStateChange transition)
 {
-  GstStateChangeReturn ret;
+  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+  GstOmxBaseFilter *self;
+  GOmxCore *core;
+
+  self = GST_OMX_BASE_FILTER (element);
+  core = self->gomx;
+
+  GST_LOG_OBJECT (self, "begin");
+
+  GST_INFO_OBJECT (self, "changing state %s - %s",
+      gst_element_state_get_name (GST_STATE_TRANSITION_CURRENT (transition)),
+      gst_element_state_get_name (GST_STATE_TRANSITION_NEXT (transition)));
+
+  switch (transition) {
+    case GST_STATE_CHANGE_PAUSED_TO_READY:
+      if (!core->postproc)
+        uiomux_unregister ((void *) 0x80000000);
+      break;
+
+    default:
+      break;
+  }
 
   ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+
+  if (ret == GST_STATE_CHANGE_FAILURE)
+    goto leave;
+
+  switch (transition) {
+    case GST_STATE_CHANGE_NULL_TO_READY:
+      if (!core->postproc)
+        uiomux_register ((void *) 0x80000000, 0x80000000, 0x20000000);
+      break;
+
+    default:
+      break;
+  }
+
+leave:
+  GST_LOG_OBJECT (self, "end");
 
   return ret;
 }
@@ -165,7 +202,6 @@ settings_changed_cb (GOmxCore * core)
       else
         ALIGN2UP (stride, stride);
       chroma_byte_offset = stride * ALIGN32 (sliceheight);
-      uiomux_register ((void *) 0x80000000, 0x80000000, 0x20000000);
 #define OMXR_TILE_WIDTH	  32
 #define OMXR_TILE_HEIGHT  8
       gst_structure_set (struc, "tile-width", G_TYPE_INT, OMXR_TILE_WIDTH,
