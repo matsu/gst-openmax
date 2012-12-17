@@ -449,6 +449,7 @@ output_loop (gpointer data)
         }
         buf = gst_buffer_new ();
         gst_buffer_set_caps (buf, caps);
+        gst_caps_unref (caps);
 
         if (G_LIKELY (buf)) {
           gint chroma_byte_offset;
