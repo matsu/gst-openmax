@@ -31,9 +31,23 @@ type_base_init (gpointer g_class)
 {
 }
 
+static GstStateChangeReturn
+change_state (GstElement * element, GstStateChange transition)
+{
+  GstStateChangeReturn ret;
+
+  ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+
+  return ret;
+}
+
 static void
 type_class_init (gpointer g_class, gpointer class_data)
 {
+  GstElementClass *gstelement_class;
+
+  gstelement_class = GST_ELEMENT_CLASS (g_class);
+  gstelement_class->change_state = change_state;
 }
 
 static gboolean
