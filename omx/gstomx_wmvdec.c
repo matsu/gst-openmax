@@ -110,6 +110,55 @@ gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
 }
 
 static GstFlowReturn
+gst_omx_wmvdec_split_and_push_field_picture (GstPad * pad, GstCaps * caps,
+    GstClockTime timestamp, GstClockTime duration)
+{
+  GstOmxWmvDec *omx_wmvdec;
+  GstBuffer *buf;
+  const guint8 *adapter_buf;
+  guint field_pic_size;
+  GstFlowReturn result;
+  guint avail_size = 0;
+  guint i;
+
+  omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
+
+  /* Try to search field picture start code */
+  while (avail_size != gst_adapter_available (omx_wmvdec->adapter)) {
+    avail_size = gst_adapter_available (omx_wmvdec->adapter);
+    adapter_buf = gst_adapter_peek (omx_wmvdec->adapter, avail_size);
+
+    field_pic_size = 0;
+    for (i = 1; i < avail_size - 4; i++) {
+      if (G_UNLIKELY (GST_READ_UINT32_BE (&adapter_buf[i]) == 0x0000010c)) {
+        field_pic_size = i;
+        break;
+      }
+    }
+
+    if (field_pic_size) {
+      /* A field picture start code was found.
+         Take the field picture from the adapter. */
+      buf = gst_adapter_take_buffer (omx_wmvdec->adapter, field_pic_size);
+      gst_buffer_set_caps (buf, caps);
+      GST_BUFFER_TIMESTAMP (buf) = timestamp;
+      GST_BUFFER_DURATION (buf) = duration;
+
+      result = omx_wmvdec->base_chain_func (pad, buf);
+      if (result != GST_FLOW_OK) {
+        GST_ERROR_OBJECT (omx_wmvdec, "failed to push field picture data");
+        g_object_unref (omx_wmvdec);
+        return result;
+      }
+    }
+  }
+
+  g_object_unref (omx_wmvdec);
+
+  return GST_FLOW_OK;
+}
+
+static GstFlowReturn
 gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
 {
   GstOmxBaseFilter *omx_base;
@@ -117,20 +166,22 @@ gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
   guint size;
   guint8 *data;
   GstFlowReturn result;
+  GstCaps *caps;
+  GstClockTime timestamp, duration;
 
   omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
   omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
 
   GST_INFO_OBJECT (omx_wmvdec, "Enter");
 
+  caps = GST_BUFFER_CAPS (buf);
+  timestamp = GST_BUFFER_TIMESTAMP (buf);
+  duration = GST_BUFFER_DURATION (buf);
+
   if (omx_wmvdec->codec_data == NULL)
     goto no_codec_data;
 
   if (omx_wmvdec->is_ap) {
-    GstCaps *caps;
-
-    caps = GST_BUFFER_CAPS (buf);
-
     buf = gst_buffer_join (omx_wmvdec->codec_data, buf);
     gst_buffer_set_caps (buf, caps);
 
@@ -177,6 +228,33 @@ gst_omx_wmvdec_pad_chain (GstPad * pad, GstBuffer * buf)
 
 no_codec_data:
 
+  gst_adapter_push (omx_wmvdec->adapter, buf);
+
+  /*
+   * To parse field structure images, this funtion searches a start code present
+   * before a field picture data and it passes the field picture into
+   * base_chain_func(). The field interlaced mode is only supported in the
+   * advanced profile.
+   */
+  if (omx_wmvdec->is_ap) {
+    result = gst_omx_wmvdec_split_and_push_field_picture (pad, caps, timestamp,
+        duration);
+    if (result != GST_FLOW_OK) {
+      GST_ERROR_OBJECT (omx_wmvdec, "failed to push field picture data");
+      gst_adapter_flush (omx_wmvdec->adapter,
+          gst_adapter_available (omx_wmvdec->adapter));
+      g_object_unref (omx_wmvdec);
+      return result;
+    }
+  }
+
+  /* Take the last frame */
+  buf = gst_adapter_take_buffer (omx_wmvdec->adapter,
+      gst_adapter_available (omx_wmvdec->adapter));
+  gst_buffer_set_caps (buf, caps);
+  GST_BUFFER_TIMESTAMP (buf) = timestamp;
+  GST_BUFFER_DURATION (buf) = duration;
+
   result = omx_wmvdec->base_chain_func (pad, buf);
 
   g_object_unref (omx_wmvdec);
@@ -185,8 +263,25 @@ no_codec_data:
 }
 
 static void
+finalize (GObject * obj)
+{
+  GstOmxWmvDec *omx_wmvdec;
+
+  omx_wmvdec = GST_OMX_WMVDEC (obj);
+
+  g_object_unref (omx_wmvdec->adapter);
+
+  G_OBJECT_CLASS (parent_class)->finalize (obj);
+}
+
+static void
 type_class_init (gpointer g_class, gpointer class_data)
 {
+  GObjectClass *gobject_class;
+
+  gobject_class = G_OBJECT_CLASS (g_class);
+
+  gobject_class->finalize = finalize;
 }
 
 static void
@@ -214,4 +309,6 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
   omx_wmvdec->width = 0;
   omx_wmvdec->height = 0;
   omx_wmvdec->is_ap = FALSE;
+
+  omx_wmvdec->adapter = gst_adapter_new ();
 }

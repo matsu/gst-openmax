@@ -23,6 +23,7 @@
 #define GSTOMX_WMVDEC_H
 
 #include <gst/gst.h>
+#include <gst/base/gstadapter.h>
 
 G_BEGIN_DECLS
 #define GST_OMX_WMVDEC(obj) (GstOmxWmvDec *) (obj)
@@ -43,6 +44,8 @@ struct GstOmxWmvDec
   GstBuffer *codec_data;
   guint32 width, height;
   gboolean is_ap;
+
+  GstAdapter *adapter;
 };
 
 struct GstOmxWmvDecClass
