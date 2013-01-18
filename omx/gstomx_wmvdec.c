@@ -121,8 +121,14 @@ gst_omx_wmvdec_split_and_push_field_picture (GstPad * pad, GstCaps * caps,
   GstFlowReturn result;
   guint avail_size = 0;
   guint i;
+  guint val1, val2, val3, val4;
 
   omx_wmvdec = GST_OMX_WMVDEC (gst_pad_get_parent (pad));
+
+  val1 = GUINT32_FROM_BE (0x0000010c);
+  val2 = GUINT32_FROM_BE (0x0c000000);
+  val3 = GUINT32_FROM_BE (0x010c0000);
+  val4 = GUINT32_FROM_BE (0x00010c00);
 
   /* Try to search field picture start code */
   while (avail_size != gst_adapter_available (omx_wmvdec->adapter)) {
@@ -130,11 +136,51 @@ gst_omx_wmvdec_split_and_push_field_picture (GstPad * pad, GstCaps * caps,
     adapter_buf = gst_adapter_peek (omx_wmvdec->adapter, avail_size);
 
     field_pic_size = 0;
-    for (i = 1; i < avail_size - 4; i++) {
-      if (G_UNLIKELY (GST_READ_UINT32_BE (&adapter_buf[i]) == 0x0000010c)) {
+    for (i = 1; i < avail_size - 4; i += 4) {
+      guint *val;
+
+      val = (guint32 *) & adapter_buf[i];
+      if (*val == val1) {
         field_pic_size = i;
         break;
       }
+#if (G_BYTE_ORDER == G_LITTLE_ENDIAN)
+      if (((*val & 0xffffff00) == 0x01000000) &&
+          ((*(val + 1) & 0x000000ff) == val2)) {
+        field_pic_size = i + 1;
+        break;
+      }
+
+      if (((*val & 0xffff0000) == 0x00000000) &&
+          ((*(val + 1) & 0x0000ffff) == val3)) {
+        field_pic_size = i + 2;
+        break;
+      }
+
+      if (((*val & 0xff000000) == 0x00000000) &&
+          ((*(val + 1) & 0x00ffffff) == val4)) {
+        field_pic_size = i + 3;
+        break;
+      }
+#else
+      if (((*val & 0x00ffffff) == 0x00000001) &&
+          ((*(val + 1) & 0xff000000) == val2)) {
+        field_pic_size = i + 1;
+        break;
+      }
+
+      if (((*val & 0x0000ffff) == 0x00000000) &&
+          ((*(val + 1) & 0xffff0000) == val3)) {
+        field_pic_size = i + 2;
+        break;
+      }
+
+      if (((*val & 0x000000ff) == 0x00000000) &&
+          ((*(val + 1) & 0xffffff00) == val4)) {
+        field_pic_size = i + 3;
+        break;
+      }
+#endif
     }
 
     if (field_pic_size) {
