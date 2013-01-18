@@ -104,6 +104,7 @@ gst_omx_wmvdec_sink_setcaps (GstPad * pad, GstCaps * caps)
 
   GST_INFO_OBJECT (omx_wmvdec, "setcaps (sink): %" GST_PTR_FORMAT, sink_caps);
 
+  gst_caps_unref (sink_caps);
   g_object_unref (omx_wmvdec);
 
   return result;
