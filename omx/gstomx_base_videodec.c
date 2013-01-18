@@ -222,6 +222,8 @@ settings_changed_cb (GOmxCore * core)
 
     GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
     gst_pad_set_caps (omx_base->srcpad, new_caps);
+
+    gst_caps_unref (new_caps);
   }
 
   return TRUE;
