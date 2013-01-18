@@ -70,6 +70,86 @@ omx_setup (GstOmxBaseFilter * omx_base)
   omx_mpeg4dec->base_omx_setup (omx_base);
 }
 
+static gboolean
+gst_omx_mpeg4dec_sink_setcaps (GstPad * pad, GstCaps * caps)
+{
+  GstOmxMpeg4Dec *omx_mpeg4dec;
+  GstStructure *structure;
+  GstCaps *sink_caps;
+  const GValue *value;
+  gboolean result;
+
+  omx_mpeg4dec = GST_OMX_MPEG4DEC (gst_pad_get_parent (pad));
+
+  GST_INFO_OBJECT (omx_mpeg4dec, "Enter");
+
+  /* get codec_data */
+  structure = gst_caps_get_structure (caps, 0);
+  if (omx_mpeg4dec->codec_data != NULL) {
+    gst_buffer_unref (omx_mpeg4dec->codec_data);
+    omx_mpeg4dec->codec_data = NULL;
+  }
+
+  sink_caps = gst_caps_copy (caps);
+
+  value = gst_structure_get_value (structure, "codec_data");
+  if (value != NULL) {
+    GstStructure *st;
+
+    omx_mpeg4dec->codec_data = gst_buffer_ref (gst_value_get_buffer (value));
+    GST_INFO_OBJECT (omx_mpeg4dec,
+        "codec_data_length=%d", GST_BUFFER_SIZE (omx_mpeg4dec->codec_data));
+
+    sink_caps = gst_caps_make_writable (sink_caps);
+    st = gst_caps_get_structure (sink_caps, 0);
+    /* To prevent duplication of pushing codec_data in base_filter. */
+    gst_structure_remove_field (st, "codec_data");
+  }
+
+  GST_INFO_OBJECT (omx_mpeg4dec, "setcaps (sink): %" GST_PTR_FORMAT, sink_caps);
+
+  result = omx_mpeg4dec->base_setcapsfunc (pad, sink_caps);
+
+  gst_caps_unref (sink_caps);
+  g_object_unref (omx_mpeg4dec);
+
+  return result;
+}
+
+static GstFlowReturn
+gst_omx_mpeg4dec_pad_chain (GstPad * pad, GstBuffer * buf)
+{
+  GstOmxBaseFilter *omx_base_filter;
+  GstOmxMpeg4Dec *omx_mpeg4dec;
+  GstCaps *caps;
+  GstClockTime timestamp, duration;
+  GstFlowReturn result;
+
+  omx_base_filter = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
+  omx_mpeg4dec = GST_OMX_MPEG4DEC (gst_pad_get_parent (pad));
+
+  GST_INFO_OBJECT (omx_mpeg4dec, "Enter");
+
+  caps = GST_BUFFER_CAPS (buf);
+  timestamp = GST_BUFFER_TIMESTAMP (buf);
+  duration = GST_BUFFER_DURATION (buf);
+
+  if (omx_mpeg4dec->codec_data) {
+    buf = gst_buffer_join (omx_mpeg4dec->codec_data, buf);
+    gst_buffer_set_caps (buf, caps);
+    GST_BUFFER_TIMESTAMP (buf) = timestamp;
+    GST_BUFFER_DURATION (buf) = duration;
+
+    omx_mpeg4dec->codec_data = NULL;
+  }
+
+  result = omx_mpeg4dec->base_chain_func (pad, buf);
+
+  g_object_unref (omx_mpeg4dec);
+
+  return result;
+}
+
 static void
 type_class_init (gpointer g_class, gpointer class_data)
 {
@@ -90,4 +170,15 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
 
   omx_mpeg4dec->base_omx_setup = omx_base_filter->omx_setup;
   omx_base_filter->omx_setup = omx_setup;
+
+  omx_mpeg4dec->base_setcapsfunc =
+      GST_PAD_SETCAPSFUNC (omx_base_filter->sinkpad);
+  gst_pad_set_setcaps_function (omx_base_filter->sinkpad,
+      gst_omx_mpeg4dec_sink_setcaps);
+
+  omx_mpeg4dec->base_chain_func = GST_PAD_CHAINFUNC (omx_base_filter->sinkpad);
+  gst_pad_set_chain_function (omx_base_filter->sinkpad,
+      gst_omx_mpeg4dec_pad_chain);
+
+  omx_mpeg4dec->codec_data = NULL;
 }

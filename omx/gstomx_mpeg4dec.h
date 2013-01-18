@@ -37,6 +37,9 @@ struct GstOmxMpeg4Dec
   GstOmxBaseVideoDec omx_base;
 
   GstOmxBaseFilterCb base_omx_setup;
+  GstPadSetCapsFunction base_setcapsfunc;
+  GstPadChainFunction base_chain_func;
+  GstBuffer *codec_data;
 };
 
 struct GstOmxMpeg4DecClass
