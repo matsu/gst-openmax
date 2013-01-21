@@ -32,6 +32,18 @@ typedef struct GstOmxMpeg4DecClass GstOmxMpeg4DecClass;
 
 #include "gstomx_base_videodec.h"
 
+/* start code value */
+#define SC_VISUAL_OBJECT_SEQUENCE       0xb0
+#define SC_VISUAL_OBJECT                0xb5
+#define SC_STILL_TEXTURE_OBJECT         0xbe
+#define SC_MESH_OBJECT                  0xbc
+#define SC_FACE_OBJECT                  0xba
+#define SC_VIDEO_OBJECT_MIN             0x00
+#define SC_VIDEO_OBJECT_MAX             0x1f
+#define SC_VIDEO_OBJECT_LAYER_MIN       0x20
+#define SC_VIDEO_OBJECT_LAYER_MAX       0x2f
+#define SC_3D_MESH_OBJECT               0x20
+
 struct GstOmxMpeg4Dec
 {
   GstOmxBaseVideoDec omx_base;
@@ -45,6 +57,12 @@ struct GstOmxMpeg4Dec
 struct GstOmxMpeg4DecClass
 {
   GstOmxBaseVideoDecClass parent_class;
+};
+
+struct range_sc
+{
+  guint8 min;
+  guint8 max;
 };
 
 GType gst_omx_mpeg4dec_get_type (void);
