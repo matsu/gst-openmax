@@ -36,6 +36,35 @@ type_class_init (gpointer g_class, gpointer class_data)
 {
 }
 
+static gboolean
+query_tladdressing_supported (GstOmxBaseFilter * omx_base)
+{
+  GstOmxBaseVideoDec *self;
+  gboolean result = FALSE;
+  GstPad *peer;
+  GstStructure *structure;
+  GstQuery *query;
+
+  self = GST_OMX_BASE_VIDEODEC (omx_base);
+  peer = gst_pad_get_peer (omx_base->srcpad);
+  structure = gst_structure_empty_new ("GstQueryTLAddressingSupported");
+  gst_structure_set (structure, "tladdressing-supported", G_TYPE_BOOLEAN, FALSE,
+      NULL);
+  self->query_type_tladdr = gst_query_type_register ("tladdressing-supported",
+      "whether dealing with T/L addressing as a capability or not");
+  query = gst_query_new_application (self->query_type_tladdr, structure);
+  if (gst_pad_query (peer, query)) {
+    gst_structure_get_boolean (structure, "tladdressing-supported", &result);
+  }
+
+  gst_query_unref (query);
+  gst_object_unref (peer);
+
+  GST_INFO_OBJECT (self, "A downstream sink %s T/L addressing.",
+      result ? "supports" : "does not support");
+  return result;
+}
+
 static void
 settings_changed_cb (GOmxCore * core)
 {
@@ -50,6 +79,17 @@ settings_changed_cb (GOmxCore * core)
   self = GST_OMX_BASE_VIDEODEC (omx_base);
 
   GST_DEBUG_OBJECT (omx_base, "settings changed");
+
+  /* check the downstream support */
+  if (omx_base->tiled_output) {
+    gboolean supported;
+
+    supported = query_tladdressing_supported (omx_base);
+    if (!supported)
+      GST_ELEMENT_ERROR (self, LIBRARY, SETTINGS,
+          ("The downstream elements do not support the T/L addressing."),
+          ("You must turn off the 'tiled-output' property."));
+  }
 
   {
     OMX_PARAM_PORTDEFINITIONTYPE param;
