@@ -31,6 +31,7 @@ enum
   ARG_NUM_INPUT_BUFFERS,
   ARG_NUM_OUTPUT_BUFFERS,
   ARG_TILED_OUTPUT,
+  ARG_MAX_VIDEO_RESOLUTION,
 };
 
 static void init_interfaces (GType type);
@@ -215,6 +216,9 @@ set_property (GObject * obj,
     case ARG_TILED_OUTPUT:
       self->tiled_output = g_value_get_boolean (value);
       break;
+    case ARG_MAX_VIDEO_RESOLUTION:
+      self->max_video_reso = g_value_get_uint (value);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
       break;
@@ -259,6 +263,9 @@ get_property (GObject * obj, guint prop_id, GValue * value, GParamSpec * pspec)
       break;
     case ARG_TILED_OUTPUT:
       g_value_set_boolean (value, self->tiled_output);
+      break;
+    case ARG_MAX_VIDEO_RESOLUTION:
+      g_value_set_uint (value, self->max_video_reso);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
@@ -307,6 +314,10 @@ type_class_init (gpointer g_class, gpointer class_data)
         g_param_spec_boolean ("tiled-output", "Tiled image output",
             "Output tiled image data for efficient hardware rendering",
             FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+    g_object_class_install_property (gobject_class, ARG_MAX_VIDEO_RESOLUTION,
+        g_param_spec_uint ("max-video-resolution", "Maximum video resolution",
+            "The maximum resolution of video output can be accepted",
+            240, 1080, 1080, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   }
 }
 
@@ -866,6 +877,7 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
 
   self->use_timestamps = TRUE;
   self->tiled_output = FALSE;
+  self->max_video_reso = 1080;
 
   self->gomx = gstomx_core_new (self, G_TYPE_FROM_CLASS (g_class));
   self->in_port = g_omx_core_new_port (self->gomx, 0);

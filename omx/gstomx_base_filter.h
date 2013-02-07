@@ -48,6 +48,7 @@ struct GstOmxBaseFilter
 
   gboolean use_timestamps;   /** @todo remove; timestamps should always be used */
   gboolean tiled_output;
+  guint max_video_reso;
   gboolean ready;
   GMutex *ready_lock;
 

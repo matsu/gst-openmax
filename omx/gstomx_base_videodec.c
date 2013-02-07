@@ -272,6 +272,55 @@ omx_setup (GstOmxBaseFilter * omx_base)
       OMX_GetExtensionIndex (gomx->omx_handle, OMX_VPU5_SoftwareRender, &index);
       OMX_SetParameter (gomx->omx_handle, index, &on);
     }
+
+    /* Set the maximum resolution of video output */
+    {
+      OMX_INDEXTYPE index;
+      OMX_PARAM_REVPU5MAXPARAM vpu5param;
+
+      OMX_GetExtensionIndex (gomx->omx_handle, OMX_VPU5_CommandMaxOut, &index);
+
+      G_OMX_INIT_PARAM (vpu5param);
+      OMX_GetParameter (gomx->omx_handle, index, &vpu5param);
+
+      switch (omx_base->max_video_reso) {
+        case 1080:
+          vpu5param.nWidth = 1920;
+          vpu5param.nHeight = 1080;
+          vpu5param.eVPU5AVCLevel = OMX_VPU5AVCLevel41;
+          break;
+        case 720:
+          vpu5param.nWidth = 1280;
+          vpu5param.nHeight = 720;
+          vpu5param.eVPU5AVCLevel = OMX_VPU5AVCLevel4;
+          break;
+        case 576:
+          vpu5param.nWidth = 720;
+          vpu5param.nHeight = 576;
+          vpu5param.eVPU5AVCLevel = OMX_VPU5AVCLevel32;
+          break;
+        case 480:
+          vpu5param.nWidth = 854;
+          vpu5param.nHeight = 480;
+          vpu5param.eVPU5AVCLevel = OMX_VPU5AVCLevel31;
+          break;
+        case 360:
+          vpu5param.nWidth = 640;
+          vpu5param.nHeight = 360;
+          vpu5param.eVPU5AVCLevel = OMX_VPU5AVCLevel3;
+          break;
+        case 240:
+          vpu5param.nWidth = 320;
+          vpu5param.nHeight = 240;
+          vpu5param.eVPU5AVCLevel = OMX_VPU5AVCLevel22;
+          break;
+        default:
+          GST_ERROR_OBJECT (self, "Unknown resolution type %u.",
+              omx_base->max_video_reso);
+          break;
+      }
+      OMX_SetParameter (gomx->omx_handle, index, &vpu5param);
+    }
   }
 
   GST_INFO_OBJECT (omx_base, "end");
