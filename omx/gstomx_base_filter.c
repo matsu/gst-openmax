@@ -121,7 +121,7 @@ change_state (GstElement * element, GstStateChange transition)
 
   switch (transition) {
     case GST_STATE_CHANGE_PAUSED_TO_READY:
-      g_mutex_lock (self->ready_lock);
+      g_mutex_lock (&self->ready_lock);
       if (self->ready) {
         /* unlock */
         g_omx_port_finish (self->in_port);
@@ -131,7 +131,7 @@ change_state (GstElement * element, GstStateChange transition)
         g_omx_core_unload (core);
         self->ready = FALSE;
       }
-      g_mutex_unlock (self->ready_lock);
+      g_mutex_unlock (&self->ready_lock);
       if (core->omx_state != OMX_StateLoaded &&
           core->omx_state != OMX_StateInvalid) {
         ret = GST_STATE_CHANGE_FAILURE;
@@ -163,7 +163,7 @@ finalize (GObject * obj)
 
   g_omx_core_free (self->gomx);
 
-  g_mutex_free (self->ready_lock);
+  g_mutex_clear (&self->ready_lock);
 
   G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
@@ -576,7 +576,7 @@ pad_chain (GstPad * pad, GstBuffer * buf)
   GST_LOG_OBJECT (self, "state: %d", gomx->omx_state);
 
   if (G_UNLIKELY (gomx->omx_state == OMX_StateLoaded)) {
-    g_mutex_lock (self->ready_lock);
+    g_mutex_lock (&self->ready_lock);
 
     GST_INFO_OBJECT (self, "omx: prepare");
 
@@ -594,7 +594,7 @@ pad_chain (GstPad * pad, GstBuffer * buf)
       gst_pad_start_task (self->srcpad, output_loop, self->srcpad);
     }
 
-    g_mutex_unlock (self->ready_lock);
+    g_mutex_unlock (&self->ready_lock);
 
     if (gomx->omx_state != OMX_StateIdle)
       goto out_flushing;
@@ -890,7 +890,7 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
   self->in_port = g_omx_core_new_port (self->gomx, 0);
   self->out_port = g_omx_core_new_port (self->gomx, 1);
 
-  self->ready_lock = g_mutex_new ();
+  g_mutex_int (&self->ready_lock);
 
   self->sinkpad =
       gst_pad_new_from_template (gst_element_class_get_pad_template

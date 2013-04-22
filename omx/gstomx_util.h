@@ -65,7 +65,7 @@ struct GOmxImp
   guint client_count;
   void *dl_handle;
   GOmxSymbolTable sym_table;
-  GMutex *mutex;
+  GMutex mutex;
 };
 
 struct GOmxCore
@@ -76,8 +76,8 @@ struct GOmxCore
   OMX_ERRORTYPE omx_error;
 
   OMX_STATETYPE omx_state;
-  GCond *omx_state_condition;
-  GMutex *omx_state_mutex;
+  GCond omx_state_condition;
+  GMutex omx_state_mutex;
 
   GPtrArray *ports;
 
@@ -107,7 +107,7 @@ struct GOmxPort
   guint port_index;
   OMX_BUFFERHEADERTYPE **buffers;
 
-  GMutex *mutex;
+  GMutex mutex;
   gboolean enabled;
   gboolean omx_allocate;   /**< Setup with OMX_AllocateBuffer rather than OMX_UseBuffer */
   AsyncQueue *queue;
