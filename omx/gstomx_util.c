@@ -78,7 +78,7 @@ static OMX_CALLBACKTYPE callbacks =
     { EventHandler, EmptyBufferDone, FillBufferDone };
 
 /* protect implementations hash_table */
-static GMutex *imp_mutex;
+static GMutex imp_mutex;
 static GHashTable *implementations;
 static gboolean initialized;
 
@@ -151,7 +151,7 @@ imp_new (const gchar * name)
       return NULL;
     }
 
-    imp->mutex = g_mutex_new ();
+    g_mutex_init(&imp->mutex);
     imp->sym_table.init = dlsym (handle, "OMX_Init");
     imp->sym_table.deinit = dlsym (handle, "OMX_Deinit");
     imp->sym_table.get_handle = dlsym (handle, "OMX_GetHandle");
@@ -167,7 +167,7 @@ imp_free (GOmxImp * imp)
   if (imp->dl_handle) {
     dlclose (imp->dl_handle);
   }
-  g_mutex_free (imp->mutex);
+  g_mutex_clear(&imp->mutex);
   g_free (imp);
 }
 
@@ -177,19 +177,19 @@ request_imp (const gchar * name, gboolean disable_postproc)
   GOmxImp *imp = NULL;
   int retry = 1;
 
-  g_mutex_lock (imp_mutex);
+  g_mutex_lock (&imp_mutex);
   imp = g_hash_table_lookup (implementations, name);
   if (!imp) {
     imp = imp_new (name);
     if (imp)
       g_hash_table_insert (implementations, g_strdup (name), imp);
   }
-  g_mutex_unlock (imp_mutex);
+  g_mutex_unlock (&imp_mutex);
 
   if (!imp)
     return NULL;
 
-  g_mutex_lock (imp->mutex);
+  g_mutex_lock (&imp->mutex);
 reinit:
   if (imp->client_count == 0) {
     OMX_ERRORTYPE (*r_config) (OMX_STRING path);
@@ -200,7 +200,7 @@ reinit:
       if (r_config)
         omx_error = r_config (FILE_OMXR_CFG_NO_IPC);
       if ((r_config == NULL) || (omx_error != OMX_ErrorNone)) {
-        g_mutex_unlock (imp->mutex);
+        g_mutex_unlock (&imp->mutex);
         return NULL;
       }
     }
@@ -211,12 +211,12 @@ reinit:
         imp->sym_table.deinit ();
         goto reinit;
       }
-      g_mutex_unlock (imp->mutex);
+      g_mutex_unlock (&imp->mutex);
       return NULL;
     }
   }
   imp->client_count++;
-  g_mutex_unlock (imp->mutex);
+  g_mutex_unlock (&imp->mutex);
 
   return imp;
 }
@@ -224,12 +224,12 @@ reinit:
 static inline void
 release_imp (GOmxImp * imp)
 {
-  g_mutex_lock (imp->mutex);
+  g_mutex_lock (&imp->mutex);
   imp->client_count--;
   if (imp->client_count == 0) {
     imp->sym_table.deinit ();
   }
-  g_mutex_unlock (imp->mutex);
+  g_mutex_unlock (&imp->mutex);
 }
 
 void
@@ -237,7 +237,7 @@ g_omx_init (void)
 {
   if (!initialized) {
     /* safe as plugin_init is safe */
-    imp_mutex = g_mutex_new ();
+    g_mutex_init(&imp_mutex);
     implementations = g_hash_table_new_full (g_str_hash,
         g_str_equal, g_free, (GDestroyNotify) imp_free);
     initialized = TRUE;
@@ -249,7 +249,7 @@ g_omx_deinit (void)
 {
   if (initialized) {
     g_hash_table_destroy (implementations);
-    g_mutex_free (imp_mutex);
+    g_mutex_clear (&imp_mutex);
     initialized = FALSE;
   }
 }
@@ -268,8 +268,8 @@ g_omx_core_new (void *object)
   core->object = object;
   core->ports = g_ptr_array_new ();
 
-  core->omx_state_condition = g_cond_new ();
-  core->omx_state_mutex = g_mutex_new ();
+  g_cond_init(&core->omx_state_condition);
+  g_mutex_init(&core->omx_state_mutex);
 
   core->done_sem = g_sem_new ();
   core->flush_sem = g_sem_new ();
@@ -289,8 +289,8 @@ g_omx_core_free (GOmxCore * core)
   g_sem_free (core->flush_sem);
   g_sem_free (core->done_sem);
 
-  g_mutex_free (core->omx_state_mutex);
-  g_cond_free (core->omx_state_condition);
+  g_mutex_clear (&core->omx_state_mutex);
+  g_cond_clear (&core->omx_state_condition);
 
   g_ptr_array_free (core->ports, TRUE);
 
@@ -501,7 +501,7 @@ g_omx_port_new (GOmxCore * core, guint index)
 
   port->enabled = TRUE;
   port->queue = async_queue_new ();
-  port->mutex = g_mutex_new ();
+  g_mutex_init (&port->mutex);
 
   return port;
 }
@@ -509,7 +509,7 @@ g_omx_port_new (GOmxCore * core, guint index)
 void
 g_omx_port_free (GOmxPort * port)
 {
-  g_mutex_free (port->mutex);
+  g_mutex_clear (&port->mutex);
   async_queue_free (port->queue);
 
   g_free (port->buffers);
@@ -726,7 +726,7 @@ g_omx_port_finish (GOmxPort * port)
 static inline void
 change_state (GOmxCore * core, OMX_STATETYPE state)
 {
-  g_mutex_lock (core->omx_state_mutex);
+  g_mutex_lock (&core->omx_state_mutex);
 
   GST_DEBUG_OBJECT (core->object, "state=%d", state);
   OMX_SendCommand (core->omx_handle, OMX_CommandStateSet, state, NULL);
@@ -735,13 +735,13 @@ change_state (GOmxCore * core, OMX_STATETYPE state)
 static inline void
 complete_change_state (GOmxCore * core, OMX_STATETYPE state)
 {
-  g_mutex_lock (core->omx_state_mutex);
+  g_mutex_lock (&core->omx_state_mutex);
 
   core->omx_state = state;
-  g_cond_signal (core->omx_state_condition);
+  g_cond_signal (&core->omx_state_condition);
   GST_DEBUG_OBJECT (core->object, "state=%d", state);
 
-  g_mutex_unlock (core->omx_state_mutex);
+  g_mutex_unlock (&core->omx_state_mutex);
 }
 
 static inline void
@@ -755,9 +755,13 @@ wait_for_state (GOmxCore * core, OMX_STATETYPE state)
 
   /* try once */
   if (core->omx_state != state) {
+    gint64 t = g_get_monotonic_time () +
+      ((gint64)tv.tv_sec * G_USEC_PER_SEC + tv.tv_usec -
+      g_get_real_time ());
+
     signaled =
-        g_cond_timed_wait (core->omx_state_condition, core->omx_state_mutex,
-        &tv);
+        g_cond_wait_until (&core->omx_state_condition, &core->omx_state_mutex,
+        t);
 
     if (!signaled) {
       GST_ERROR_OBJECT (core->object, "timed out switching from '%s' to '%s'",
@@ -774,7 +778,7 @@ wait_for_state (GOmxCore * core, OMX_STATETYPE state)
   }
 
 leave:
-  g_mutex_unlock (core->omx_state_mutex);
+  g_mutex_unlock (&core->omx_state_mutex);
 }
 
 /*
@@ -926,9 +930,9 @@ EventHandler (OMX_HANDLETYPE omx_handle,
        */
       if (is_err_type_state_change (core->omx_error)) {
         /* unlock wait_for_state */
-        g_mutex_lock (core->omx_state_mutex);
-        g_cond_signal (core->omx_state_condition);
-        g_mutex_unlock (core->omx_state_mutex);
+        g_mutex_lock (&core->omx_state_mutex);
+        g_cond_signal (&core->omx_state_condition);
+        g_mutex_unlock (&core->omx_state_mutex);
       }
 
       GST_ELEMENT_ERROR (core->object, STREAM, FAILED, (NULL),
